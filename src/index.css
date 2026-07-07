@@ -1,13 +1,44 @@
 @import "tailwindcss";
 
 @theme {
-  --color-bg-dark: #1C1810;
+  --color-bg-dark: #0f0d0a;
+  --color-bg-panel: #16140f;
+  --color-bg-surface: #1d1a13;
   --color-gold: #C9A227;
+  --color-gold-dim: #9a7c1e;
   --color-olive: #7C8B5A;
   --color-rust: #A64B2A;
   --color-cream: #ddd8c0;
+  --color-cream-dim: #a09a87;
+
+  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', ui-monospace, monospace;
 }
 
 body {
   margin: 0;
+  background-color: #0f0d0a;
+}
+
+/* Tactical grid scanline overlay — subtle texture for war-room feel */
+.tactical-bg {
+  background-image:
+    linear-gradient(rgba(201,162,39,0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(201,162,39,0.025) 1px, transparent 1px);
+  background-size: 32px 32px;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(201,162,39,0.25); border-radius: 2px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(201,162,39,0.45); }
+
+/* Select arrow */
+select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23a09a87' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  -webkit-appearance: none;
+  appearance: none;
 }

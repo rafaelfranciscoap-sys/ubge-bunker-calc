@@ -14,20 +14,18 @@ function formatNumber(value: number | null): string {
   return new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 0 }).format(value)
 }
 
-// Rótulos das colunas de tier em PT-BR (T1/T2/T3 são termos do jogo; "wet/dry" viram
-// "molhado/seco" — estados de cura do concreto).
 const COLUMN_LABEL_PT: Record<BunkerColumnKey, string> = {
   t1: 'T1',
   t2: 'T2',
-  t3_wet: 'T3 molhado',
+  t3_wet: 'T3 mol.',
   t3_dry: 'T3 seco',
 }
 
 const INTEGRITY_CLASS_LABEL_PT: Record<string, string> = {
-  high: 'integridade alta',
-  medium: 'integridade média',
-  low: 'integridade baixa',
-  critical: 'integridade crítica',
+  high: 'Alta',
+  medium: 'Média',
+  low: 'Baixa',
+  critical: 'Crítica',
 }
 const INTEGRITY_CLASS_COLOR: Record<string, string> = {
   high: 'text-emerald-400',
@@ -35,48 +33,53 @@ const INTEGRITY_CLASS_COLOR: Record<string, string> = {
   low: 'text-rust',
   critical: 'text-red-500',
 }
+const INTEGRITY_BAR_COLOR: Record<string, string> = {
+  high: 'bg-emerald-400',
+  medium: 'bg-gold',
+  low: 'bg-rust',
+  critical: 'bg-red-500',
+}
 
 function Section({
   title,
   suffix,
   children,
+  defaultOpen = true,
 }: {
   title: string
   suffix?: string
   children: ReactNode
+  defaultOpen?: boolean
 }) {
-  const [open, setOpen] = useState(true)
+  const [open, setOpen] = useState(defaultOpen)
   return (
-    <section className="border-b border-cream/10 last:border-b-0">
+    <section className="border-b border-cream/8 last:border-b-0">
       <button
         type="button"
-        onClick={() => setOpen((value) => !value)}
-        className="flex w-full items-center gap-2 px-3 py-2 text-left"
+        onClick={() => setOpen((v) => !v)}
+        className="flex w-full items-center gap-2 px-3 py-2.5 text-left hover:bg-black/20 transition-colors"
       >
-        <MaterialCrateIcon className="shrink-0 text-cream/50" />
-        <span className="flex-1 text-sm font-semibold text-cream">
+        <span className="flex-1 font-mono text-[10px] font-bold tracking-[0.15em] text-cream/60 uppercase">
           {title}
-          {suffix && <span className="ml-1 text-xs font-normal text-cream/40">{suffix}</span>}
+          {suffix && <span className="ml-2 font-normal text-cream/25">{suffix}</span>}
         </span>
-        <ChevronIcon className={`shrink-0 text-cream/40 transition-transform ${open ? '' : '-rotate-90'}`} />
+        <ChevronIcon className={`shrink-0 h-3 w-3 text-cream/25 transition-transform ${open ? '' : '-rotate-90'}`} />
       </button>
       {open && <div className="px-3 pb-3">{children}</div>}
     </section>
   )
 }
 
-function HealthCell({ value, label, color }: { value: string; label: string; color: string }) {
+function DataRow({ label, value, valueClass = 'text-cream/90', icon }: { label: string; value: ReactNode; valueClass?: string; icon?: ReactNode }) {
   return (
-    <div className="flex flex-col items-center justify-center rounded bg-black/30 px-1 py-2 text-center">
-      <span className={`text-lg font-semibold leading-tight ${color}`}>{value}</span>
-      <span className="text-[10px] leading-tight text-cream/50">{label}</span>
+    <div className="flex items-center gap-2 py-1.5 border-b border-cream/5 last:border-b-0">
+      {icon && <span className="shrink-0 text-cream/30">{icon}</span>}
+      <span className="flex-1 font-mono text-[10px] text-cream/40">{label}</span>
+      <span className={`font-mono text-xs tabular-nums font-semibold ${valueClass}`}>{value}</span>
     </div>
   )
 }
 
-// Painel de estatísticas do bunker IMPORTADO do foxbunker (aba Simulação de Cerco), no layout do
-// "Selection Stats" do foxholeplanner. Alimentado só pelos dados que vieram do import — nada
-// estimado; campos ausentes na screenshot ficam "—".
 function isShelterAffected(weapon: Weapon, shelterCount: number): boolean {
   return shelterCount > 0 && !weapon.bypassesShelter && SHELTER_AFFECTED_TYPES.has(weapon.damageTypeName)
 }
@@ -109,121 +112,123 @@ export function ImportedBunkerPanel({ shelterCount = 0 }: { shelterCount?: numbe
   const repairTotal = data.repairBmat ?? data.repairCost
 
   return (
-    <section className="overflow-hidden rounded border border-olive/50 bg-[#171310]">
-      <div className="flex items-center justify-between gap-2 bg-black/40 px-3 py-2">
-        <h2 className="text-sm font-semibold text-olive">
-          Estatísticas do Bunker
-          <span className="ml-1 text-xs font-normal text-cream/40">(importado)</span>
-        </h2>
+    <section className="overflow-hidden rounded border border-olive/30 bg-bg-panel">
+      {/* Panel header */}
+      <div className="flex items-center justify-between border-b border-olive/20 bg-black/30 px-3 py-2.5">
+        <div className="flex items-center gap-2">
+          <div className="h-2 w-2 rounded-full bg-olive/60" />
+          <h2 className="font-mono text-[10px] font-bold tracking-[0.2em] text-olive/80 uppercase">
+            Estatísticas do Bunker
+          </h2>
+        </div>
         <button
           type="button"
           onClick={clear}
-          className="rounded border border-cream/30 px-2 py-0.5 text-xs text-cream/70 hover:border-gold/50"
+          className="rounded border border-cream/15 px-2 py-0.5 font-mono text-[9px] tracking-wider text-cream/40 uppercase hover:border-rust/40 hover:text-rust/70 transition-colors"
         >
           Limpar
         </button>
       </div>
 
+      {/* HP / Integrity visual bar */}
+      {integFraction !== null && integClass && (
+        <div className="border-b border-cream/8 px-3 py-2.5">
+          <div className="flex items-center justify-between mb-1.5">
+            <span className="font-mono text-[9px] tracking-widest text-cream/30 uppercase">Integridade Estrutural</span>
+            <span className={`font-mono text-xs font-bold ${INTEGRITY_CLASS_COLOR[integClass]}`}>
+              {Math.round(integFraction * 100)}% · {INTEGRITY_CLASS_LABEL_PT[integClass]}
+            </span>
+          </div>
+          <div className="h-1 w-full rounded-full bg-black/50 overflow-hidden">
+            <div
+              className={`h-full rounded-full transition-all ${INTEGRITY_BAR_COLOR[integClass]}`}
+              style={{ width: `${Math.round(integFraction * 100)}%` }}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* HP quick stats */}
+      <div className="grid grid-cols-3 border-b border-cream/8">
+        <QuickStat label="HP Total" value={formatNumber(data.hpTotal)} color="text-cream" />
+        <QuickStat label="HP Breach" value={formatNumber(data.breachHpAbsolute)} color="text-rust" border />
+        <QuickStat label="Breach %" value={data.breachPercent !== null ? `${Math.round(data.breachPercent)}%` : '—'} color="text-rust" border />
+      </div>
+
       {hasCost && (
         <Section title="Custo de Construção">
-          <div className="flex flex-col gap-2">
-            <div className="flex items-center gap-2 text-sm">
-              <MaterialCrateIcon className="shrink-0 text-cream/60" />
-              <span className="flex-1 text-cream/80">Materiais Básicos</span>
-              <span className="font-semibold text-rust">x{formatNumber(data.constructionBmat ?? null)}</span>
-            </div>
-            {data.constructionConcrete != null && data.constructionConcrete > 0 ? (
-              <div className="flex items-center gap-2 rounded-md border border-gold/40 bg-gold/10 px-2 py-1.5 text-sm">
-                <MaterialCrateIcon className="shrink-0 text-gold" />
-                <span className="flex-1 text-cream">
-                  Concreto <span className="text-cream/50">(para upar a T3)</span>
-                </span>
-                <span className="font-semibold text-gold">x{formatNumber(data.constructionConcrete)}</span>
-              </div>
-            ) : (
-              <div className="flex items-center gap-2 text-sm">
-                <MaterialCrateIcon className="shrink-0 text-cream/60" />
-                <span className="flex-1 text-cream/80">Concreto (para T3)</span>
-                <span className="text-cream/40">— (build não é T3)</span>
-              </div>
-            )}
-            {data.constructionDigging != null && data.constructionDigging > 0 && (
-              <div className="flex items-center gap-2 text-sm">
-                <MaterialCrateIcon className="shrink-0 text-cream/60" />
-                <span className="flex-1 text-cream/80">Materiais de Escavação</span>
-                <span className="font-semibold text-rust">x{formatNumber(data.constructionDigging)}</span>
-              </div>
-            )}
-          </div>
+          <DataRow
+            label="Materiais Básicos"
+            value={`x${formatNumber(data.constructionBmat ?? null)}`}
+            valueClass="text-rust"
+            icon={<MaterialCrateIcon className="h-3 w-3" />}
+          />
+          {data.constructionConcrete != null && data.constructionConcrete > 0 ? (
+            <DataRow
+              label="Concreto (T3)"
+              value={`x${formatNumber(data.constructionConcrete)}`}
+              valueClass="text-gold"
+              icon={<MaterialCrateIcon className="h-3 w-3" />}
+            />
+          ) : (
+            <DataRow
+              label="Concreto (T3)"
+              value="— (não T3)"
+              valueClass="text-cream/25"
+              icon={<MaterialCrateIcon className="h-3 w-3" />}
+            />
+          )}
+          {data.constructionDigging != null && data.constructionDigging > 0 && (
+            <DataRow
+              label="Escavação"
+              value={`x${formatNumber(data.constructionDigging)}`}
+              valueClass="text-rust"
+              icon={<MaterialCrateIcon className="h-3 w-3" />}
+            />
+          )}
         </Section>
       )}
 
-      <Section title="Vida do Bunker">
-        <div className="grid grid-cols-3 gap-1.5">
-          <HealthCell value={formatNumber(data.hpTotal)} label="vida total" color="text-emerald-400" />
-          <HealthCell value={formatNumber(data.repairBmat ?? data.repairCost)} label="custo de reparo" color="text-gold" />
-          <HealthCell value="—" label="taxa de reparo" color="text-cream/40" />
-          <HealthCell value={formatNumber(data.breachHpAbsolute)} label="HP de breach" color="text-rust" />
-          <HealthCell
-            value={data.breachPercent !== null ? `${Math.round(data.breachPercent)}%` : '—'}
-            label="breach %"
-            color="text-rust"
-          />
-          <HealthCell
-            value={integFraction !== null ? `${Math.round(integFraction * 100)}%` : '—'}
-            label={integClass ? INTEGRITY_CLASS_LABEL_PT[integClass] : 'integridade'}
-            color={integClass ? INTEGRITY_CLASS_COLOR[integClass] : 'text-cream/40'}
-          />
-        </div>
-        <p className="mt-2 text-[10px] text-cream/40">
-          "taxa de reparo" (hp por martelada) ainda não confirmado na fonte — mantido em branco em
-          vez de estimado.
-        </p>
-      </Section>
-
       <Section title="Manutenção / Decaimento" suffix={inferredTier ? `(${inferredTier})` : undefined}>
         {decay && inferredTier ? (
-          <div className="flex flex-col gap-2">
-            <div className="flex items-center gap-2 text-sm">
-              <MaintenanceCanIcon className="shrink-0 text-cream/60" />
-              <span className="flex-1 text-cream/80">Começa a decair após</span>
-              <span className="font-semibold text-cream tabular-nums">{formatHours(decay.startHours)}</span>
-            </div>
-            <div className="flex items-center gap-2 text-sm">
-              <MaintenanceCanIcon className="shrink-0 text-cream/60" />
-              <span className="flex-1 text-cream/80">Destruído sem manutenção em</span>
-              <span className="font-semibold text-rust tabular-nums">
-                {formatHours(totalDecayHours(inferredTier))}
-              </span>
-            </div>
-            <div className="flex items-center gap-2 text-sm">
-              <MaterialCrateIcon className="shrink-0 text-cream/60" />
-              <span className="flex-1 text-cream/80">Custo p/ reparar (manter)</span>
-              <span className="font-semibold text-gold tabular-nums">{formatNumber(repairTotal)} bmat</span>
-            </div>
-            <p className="mt-1 text-[10px] leading-relaxed text-cream/40">
-              Manter = reparar (martelo) antes de decair, zerando o cronômetro. Janela de decaimento:{' '}
-              {formatHours(decay.durationHours)}. Valores da peça-padrão {inferredTier} (datamine
-              Update 65) — Bunker Base e estruturas grandes decaem mais devagar. O consumo de
-              Maintenance Supplies (túnel) não está no datamine, então não é estimado aqui.
+          <>
+            <DataRow
+              label="Começa a decair após"
+              value={formatHours(decay.startHours)}
+              icon={<MaintenanceCanIcon className="h-3 w-3" />}
+            />
+            <DataRow
+              label="Destruído sem manutenção"
+              value={formatHours(totalDecayHours(inferredTier))}
+              valueClass="text-rust"
+              icon={<MaintenanceCanIcon className="h-3 w-3" />}
+            />
+            <DataRow
+              label="Custo p/ reparar (bmat)"
+              value={`${formatNumber(repairTotal)}`}
+              valueClass="text-gold"
+              icon={<MaterialCrateIcon className="h-3 w-3" />}
+            />
+            <p className="mt-2 font-mono text-[9px] leading-relaxed text-cream/20 tracking-wide">
+              Janela de decaimento: {formatHours(decay.durationHours)}. Valores {inferredTier} (datamine Update 65).
             </p>
-          </div>
+          </>
         ) : (
-          <p className="text-xs text-cream/50">
-            Não foi possível inferir o tier do bunker importado — decaimento indisponível.
+          <p className="font-mono text-[10px] text-cream/30">
+            Tier não detectado — decaimento indisponível.
           </p>
         )}
       </Section>
 
-      <Section title="Destruição do Bunker" suffix={shelterCount > 0 ? `(${shelterCount}× Artillery Shelter)` : '(tiros p/ destruir)'}>
+      <Section title="Tiros para Destruir" suffix={shelterCount > 0 ? `(${shelterCount}× shelter)` : undefined}>
         {destructionRows ? (
           <>
-            <table className="w-full text-xs">
+            <table className="w-full">
               <thead>
-                <tr className="text-cream/50">
-                  <th className="py-1 text-left font-normal">Arma</th>
+                <tr>
+                  <th className="pb-1.5 text-left font-mono text-[9px] font-normal tracking-widest text-cream/25 uppercase">Arma</th>
                   {BUNKER_COLUMNS.map((col) => (
-                    <th key={col.key} className="py-1 text-right font-normal">
+                    <th key={col.key} className="pb-1.5 text-right font-mono text-[9px] font-normal tracking-widest text-cream/25 uppercase">
                       {COLUMN_LABEL_PT[col.key]}
                     </th>
                   ))}
@@ -231,23 +236,23 @@ export function ImportedBunkerPanel({ shelterCount = 0 }: { shelterCount?: numbe
               </thead>
               <tbody>
                 {destructionRows.map(({ weapon, hits, shelterAffected, shelterBypassed }) => (
-                  <tr key={weapon.key} className="border-t border-cream/10">
-                    <td className="py-1 pr-2">
-                      <span className="flex items-center gap-1.5">
-                        <ShellIcon className={`shrink-0 ${shelterAffected ? 'text-olive/70' : 'text-cream/50'}`} />
-                        <span className={shelterAffected ? 'text-olive/90' : undefined}>
+                  <tr key={weapon.key} className="border-t border-cream/5">
+                    <td className="py-1.5 pr-2">
+                      <span className="flex items-center gap-1">
+                        <ShellIcon className={`shrink-0 h-3 w-3 ${shelterAffected ? 'text-olive/50' : 'text-cream/25'}`} />
+                        <span className={`font-mono text-[10px] ${shelterAffected ? 'text-olive/80' : 'text-cream/60'}`}>
                           {weapon.label}
                         </span>
                         {shelterAffected && (
-                          <span className="text-[9px] text-olive/60">+{Math.round(shelterBonusPPForWeapon(weapon, shelterCount) * 100)}pp</span>
+                          <span className="font-mono text-[8px] text-olive/40">+{Math.round(shelterBonusPPForWeapon(weapon, shelterCount) * 100)}pp</span>
                         )}
                         {shelterBypassed && (
-                          <span className="text-[9px] text-rust/60">ignora</span>
+                          <span className="font-mono text-[8px] text-rust/40">ignora</span>
                         )}
                       </span>
                     </td>
                     {BUNKER_COLUMNS.map((col) => (
-                      <td key={col.key} className={`py-1 text-right tabular-nums ${shelterAffected ? 'text-olive/90' : 'text-cream/90'}`}>
+                      <td key={col.key} className={`py-1.5 text-right font-mono text-[10px] tabular-nums font-semibold ${shelterAffected ? 'text-olive/80' : 'text-cream/80'}`}>
                         {formatNumber(hits[col.key])}
                       </td>
                     ))}
@@ -255,17 +260,25 @@ export function ImportedBunkerPanel({ shelterCount = 0 }: { shelterCount?: numbe
                 ))}
               </tbody>
             </table>
-            <p className="mt-2 text-[10px] text-cream/40">
-              <strong className="text-cream/60">T3 molhado</strong> = concreto recém-construído (toma
-              10× dano na janela de cura); <strong className="text-cream/60">T3 seco</strong> = curado
-              (24h). Fórmula e valores confirmados do foxholeplanner (open source).
+            <p className="mt-2 font-mono text-[9px] leading-relaxed text-cream/20 tracking-wide">
+              <span className="text-cream/35">T3 molhado</span> = recém-construído (10× dano, 18h);{' '}
+              <span className="text-cream/35">T3 seco</span> = curado (24h).
             </p>
           </>
         ) : (
-          <p className="text-xs text-rust">Sem HP importado — tabela indisponível.</p>
+          <p className="font-mono text-[10px] text-rust/60">Sem HP importado — tabela indisponível.</p>
         )}
       </Section>
     </section>
+  )
+}
+
+function QuickStat({ label, value, color, border }: { label: string; value: string; color: string; border?: boolean }) {
+  return (
+    <div className={`flex flex-col items-center py-2.5 px-2 ${border ? 'border-l border-cream/8' : ''}`}>
+      <span className="font-mono text-[8px] tracking-[0.15em] text-cream/25 uppercase mb-0.5">{label}</span>
+      <span className={`font-mono text-sm font-bold tabular-nums ${color}`}>{value}</span>
+    </div>
   )
 }
 

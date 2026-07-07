@@ -33,12 +33,24 @@ function formatSeconds(seconds: number | null): string {
 
 function BreachBadge({ outcome }: { outcome: BreachOutcome }) {
   const style = !outcome.canBreach
-    ? { text: 'AP não causa breach', cls: 'border-rust/40 bg-rust/10 text-rust' }
+    ? { text: 'AP NÃO CAUSA BREACH', cls: 'border-rust/40 bg-rust/10 text-rust', dot: 'bg-rust' }
     : outcome.ignoresThreshold
-      ? { text: 'Breach imediato · ignora o threshold', cls: 'border-olive/50 bg-olive/10 text-olive' }
-      : { text: 'Breach só após HP do bunker atingir o threshold', cls: 'border-gold/40 bg-gold/10 text-gold' }
+      ? { text: 'BREACH IMEDIATO · IGNORA THRESHOLD', cls: 'border-olive/50 bg-olive/10 text-olive', dot: 'bg-olive' }
+      : { text: 'BREACH APÓS THRESHOLD', cls: 'border-gold/40 bg-gold/8 text-gold', dot: 'bg-gold' }
   return (
-    <div className={`rounded-md border px-3 py-1.5 text-xs font-medium ${style.cls}`}>{style.text}</div>
+    <div className={`flex items-center gap-2 rounded border px-3 py-2 font-mono text-[10px] tracking-widest uppercase ${style.cls}`}>
+      <span className={`h-1.5 w-1.5 rounded-full shrink-0 ${style.dot}`} />
+      {style.text}
+    </div>
+  )
+}
+
+function SectionHeader({ label }: { label: string }) {
+  return (
+    <div className="flex items-center gap-2 mb-3">
+      <span className="font-mono text-[9px] tracking-[0.2em] text-cream/30 uppercase">{label}</span>
+      <div className="flex-1 h-px bg-cream/10" />
+    </div>
   )
 }
 
@@ -69,7 +81,6 @@ export function SiegeCalculator() {
   const shelterActive = shelterCount > 0 && SHELTER_AFFECTED_TYPES.has(weapon.damageTypeName) && !weapon.bypassesShelter
   const shelterBypassed = shelterCount > 0 && weapon.bypassesShelter
 
-  // Para exibir a redução efetiva no tier selecionado
   const currentColDef = BUNKER_COLUMNS.find(c => c.key === column)
   const baseProfile = currentColDef ? weapon.profiles[currentColDef.profileTier] : 0
   const adjustedProfile = Math.max(0, baseProfile - shelterBonusPP)
@@ -93,66 +104,67 @@ export function SiegeCalculator() {
 
   if (!data) {
     return (
-      <div className="flex min-h-[70vh] flex-col items-center justify-center gap-3 px-6 text-center">
-        <h1 className="text-xl font-semibold text-gold">Simulação de Cerco</h1>
-        <p className="max-w-md text-sm text-cream/60">
-          Nenhum bunker carregado. Vá até a aba{' '}
-          <strong className="text-cream">Importar</strong>, copie a build do foxbunker.com e traga
-          os dados para simular o cerco aqui.
-        </p>
+      <div className="flex min-h-[70vh] flex-col items-center justify-center gap-4 px-6 text-center">
+        <div className="flex h-16 w-16 items-center justify-center rounded-full border border-gold/20 bg-gold/5">
+          <div className="h-8 w-8 rounded-full border-2 border-gold/40 border-t-gold animate-spin" />
+        </div>
+        <div>
+          <h1 className="font-mono text-sm font-bold tracking-[0.15em] text-gold uppercase">Aguardando dados</h1>
+          <p className="mt-2 max-w-sm font-mono text-[11px] text-cream/40 leading-relaxed">
+            Nenhum bunker carregado. Vá até a aba{' '}
+            <strong className="text-cream/70">IMPORTAR</strong>, copie a build do foxbunker.com e traga
+            os dados para simular o cerco.
+          </p>
+        </div>
       </div>
     )
   }
 
   return (
-    <div className="mx-auto flex w-full max-w-6xl flex-col gap-5 p-4 sm:p-6">
-      <header>
-        <h1 className="text-xl font-semibold text-gold">Simulação de Cerco</h1>
-        <p className="text-sm text-cream/50">
-          Bunker importado do foxbunker — modificações já embutidas nos números.
-        </p>
-      </header>
+    <div className="mx-auto flex w-full max-w-7xl flex-col gap-0 p-4 sm:p-6">
+      {/* Page header */}
+      <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <div className="flex items-center gap-2">
+            <div className="h-4 w-0.5 bg-gold" />
+            <h1 className="font-mono text-xs font-bold tracking-[0.2em] text-gold uppercase">Simulação de Cerco</h1>
+          </div>
+          <p className="mt-1 font-mono text-[10px] text-cream/30 tracking-wider">
+            Bunker importado do foxbunker — modificações embutidas nos cálculos
+          </p>
+        </div>
+
+        {/* Bunker status bar */}
+        <div className="flex flex-wrap items-center gap-1">
+          <StatChip label="HP" value={formatNumber(data.hpTotal)} color="text-cream" />
+          <StatChip label="INTEG" value={data.integrityPercent !== null ? `${Math.round(data.integrityPercent)}%` : '—'} color="text-cream" />
+          <StatChip label="BREACH" value={data.breachPercent !== null ? `${Math.round(data.breachPercent)}%` : '—'} color="text-rust" />
+          {inferredTier && (
+            <span className="rounded border border-olive/40 bg-olive/10 px-2 py-0.5 font-mono text-[9px] tracking-[0.15em] text-olive uppercase">
+              {inferredTier} detectado
+            </span>
+          )}
+        </div>
+      </div>
 
       <div className="flex flex-col gap-5 lg:flex-row lg:items-start">
-        {/* Painel esquerdo */}
-        <section className="flex-1 overflow-hidden rounded-lg border border-gold/25 bg-[#171310]">
-          <div className="bg-black/40 px-4 py-2.5">
-            <h2 className="text-sm font-semibold text-gold">Planejamento de ataque</h2>
+        {/* Left panel — Attack planning */}
+        <section className="flex-1 overflow-hidden rounded border border-cream/10 bg-bg-panel">
+          {/* Panel header */}
+          <div className="flex items-center gap-3 border-b border-cream/10 bg-black/30 px-4 py-2.5">
+            <div className="h-3 w-3 rounded-full border border-gold/50 bg-gold/20" />
+            <h2 className="font-mono text-[10px] font-bold tracking-[0.2em] text-cream/70 uppercase">Planejamento de Ataque</h2>
           </div>
 
-          {/* Barra de contexto do bunker importado */}
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 border-b border-gold/15 bg-gold/5 px-4 py-2">
-            <span className="text-xs text-cream/70">
-              <span className="font-semibold text-cream">{formatNumber(data.hpTotal)}</span> HP
-            </span>
-            <span className="text-cream/30 text-xs">·</span>
-            <span className="text-xs text-cream/70">
-              <span className="font-semibold text-cream">
-                {data.integrityPercent !== null ? `${Math.round(data.integrityPercent)}%` : '—'}
-              </span>{' '}
-              integ
-            </span>
-            <span className="text-cream/30 text-xs">·</span>
-            <span className="text-xs text-cream/70">
-              <span className="font-semibold text-rust">
-                {data.breachPercent !== null ? `${Math.round(data.breachPercent)}%` : '—'}
-              </span>{' '}
-              breach
-            </span>
-            {inferredTier && (
-              <span className="ml-auto rounded-full border border-olive/40 bg-olive/15 px-2.5 py-0.5 text-[10px] font-medium text-olive">
-                {inferredTier} detectado
-              </span>
-            )}
-          </div>
+          <div className="flex flex-col gap-5 p-4">
 
-          <div className="flex flex-col gap-4 p-4">
-            <label className="flex flex-col gap-1.5">
-              <span className="text-xs font-semibold uppercase tracking-wide text-cream/50">Arma</span>
+            {/* Weapon selector */}
+            <div>
+              <SectionHeader label="Arma selecionada" />
               <select
                 value={weaponKey}
                 onChange={(e) => setWeaponKey(e.target.value)}
-                className="rounded-md border border-cream/20 bg-black/40 px-3 py-2 text-sm text-cream focus:border-gold focus:outline-none"
+                className="w-full rounded border border-cream/15 bg-black/40 px-3 py-2.5 font-mono text-xs text-cream focus:border-gold/60 focus:outline-none transition-colors"
               >
                 {WEAPONS.map((opt) => (
                   <option key={opt.key} value={opt.key}>
@@ -160,24 +172,23 @@ export function SiegeCalculator() {
                   </option>
                 ))}
               </select>
-            </label>
+            </div>
 
-            <div className="flex flex-col gap-1.5">
-              <span className="text-xs font-semibold uppercase tracking-wide text-cream/50">
-                Estado do bunker
-              </span>
+            {/* Bunker state selector */}
+            <div>
+              <SectionHeader label="Estado do bunker" />
               <div className="grid grid-cols-4 gap-1.5">
                 {BUNKER_COLUMNS.map((col) => (
                   <button
                     key={col.key}
                     type="button"
                     onClick={() => setColumn(col.key)}
-                    className={`relative rounded-md border px-2 py-2 text-xs font-medium transition-colors ${
+                    className={`relative rounded border py-2.5 font-mono text-[10px] font-bold tracking-widest uppercase transition-all ${
                       column === col.key
-                        ? 'border-gold bg-gold text-bg-dark'
+                        ? 'border-gold bg-gold/15 text-gold'
                         : detectedColumn === col.key
-                          ? 'border-gold/40 text-cream/90 hover:border-gold/60'
-                          : 'border-cream/20 text-cream/70 hover:border-gold/50'
+                          ? 'border-gold/30 text-cream/70 hover:border-gold/50 hover:text-cream'
+                          : 'border-cream/10 text-cream/40 hover:border-cream/25 hover:text-cream/70'
                     }`}
                   >
                     {COLUMN_LABEL_PT[col.key]}
@@ -188,37 +199,35 @@ export function SiegeCalculator() {
                 ))}
               </div>
               {detectedColumn && (
-                <p className="text-[10px] text-cream/40">
-                  Pré-selecionado pelo tier detectado · clique para mudar
+                <p className="mt-1.5 font-mono text-[9px] text-cream/25 tracking-wider">
+                  Pré-selecionado pelo tier detectado · clique para alterar
                 </p>
               )}
             </div>
 
-            {/* Seletor: Artillery Shelter Rooms */}
-            <div className="flex flex-col gap-1.5">
-              <span className="text-xs font-semibold uppercase tracking-wide text-cream/50">
-                Artillery Shelter Rooms
-              </span>
+            {/* Artillery Shelter */}
+            <div>
+              <SectionHeader label="Artillery Shelter Rooms" />
               <div className="grid grid-cols-4 gap-1.5">
                 {([0, 1, 2, 3] as const).map((n) => (
                   <button
                     key={n}
                     type="button"
                     onClick={() => setShelterCount(n)}
-                    className={`rounded-md border py-2 text-xs font-medium transition-colors ${
+                    className={`rounded border py-2.5 font-mono text-[10px] font-bold tracking-widest uppercase transition-all ${
                       shelterCount === n
-                        ? 'border-olive/60 bg-olive/20 text-olive'
-                        : 'border-cream/20 text-cream/60 hover:border-cream/40'
+                        ? 'border-olive/60 bg-olive/15 text-olive'
+                        : 'border-cream/10 text-cream/40 hover:border-cream/25 hover:text-cream/70'
                     }`}
                   >
-                    {n === 0 ? 'Nenhum' : `${n}×`}
+                    {n === 0 ? 'NENHUM' : `${n}×`}
                   </button>
                 ))}
               </div>
               {shelterCount > 0 && (
-                <p className="text-[10px] text-cream/40">
+                <p className="mt-1.5 font-mono text-[9px] text-cream/25 tracking-wider">
                   {shelterActive
-                    ? `${COLUMN_LABEL_PT[column]}: passa ${Math.round(baseProfile * 100)}%→${Math.round(adjustedProfile * 100)}% · −${Math.round(SHELTER_BONUS_BY_COUNT[Math.min(shelterCount, SHELTER_BONUS_BY_COUNT.length - 1)] * 100)}pp de resistência HE`
+                    ? `${COLUMN_LABEL_PT[column]}: passa ${Math.round(baseProfile * 100)}%→${Math.round(adjustedProfile * 100)}% · −${Math.round(SHELTER_BONUS_BY_COUNT[Math.min(shelterCount, SHELTER_BONUS_BY_COUNT.length - 1)] * 100)}pp resist. HE`
                     : shelterBypassed
                       ? '300mm ignora o shelter bonus'
                       : `não afeta ${weapon.damageTypeName}`}
@@ -226,116 +235,128 @@ export function SiegeCalculator() {
               )}
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
-              <label className="flex flex-col gap-1.5">
-                <span className="text-xs font-semibold uppercase tracking-wide text-cream/50">
-                  Canhões
-                </span>
-                <input
-                  type="number"
-                  min={1}
-                  value={guns}
-                  onChange={(e) => setGuns(Math.max(1, Number(e.target.value)))}
-                  className="rounded-md border border-cream/20 bg-black/40 px-3 py-2 text-sm text-cream focus:border-gold focus:outline-none"
-                />
-              </label>
-              <label className="flex flex-col gap-1.5">
-                <span className="text-xs font-semibold uppercase tracking-wide text-cream/50">
-                  Recarga (s)
-                </span>
-                <input
-                  type="number"
-                  min={0.1}
-                  step={0.1}
-                  value={reloadSeconds}
-                  onChange={(e) => setReloadSeconds(Math.max(0.1, Number(e.target.value)))}
-                  className="rounded-md border border-cream/20 bg-black/40 px-3 py-2 text-sm text-cream focus:border-gold focus:outline-none"
-                />
-              </label>
+            {/* Guns + reload */}
+            <div>
+              <SectionHeader label="Configuração de fogo" />
+              <div className="grid grid-cols-2 gap-3">
+                <label className="flex flex-col gap-1.5">
+                  <span className="font-mono text-[9px] tracking-[0.15em] text-cream/30 uppercase">Canhões</span>
+                  <input
+                    type="number"
+                    min={1}
+                    value={guns}
+                    onChange={(e) => setGuns(Math.max(1, Number(e.target.value)))}
+                    className="rounded border border-cream/15 bg-black/40 px-3 py-2.5 font-mono text-sm text-cream focus:border-gold/60 focus:outline-none transition-colors tabular-nums"
+                  />
+                </label>
+                <label className="flex flex-col gap-1.5">
+                  <span className="font-mono text-[9px] tracking-[0.15em] text-cream/30 uppercase">Recarga (s)</span>
+                  <input
+                    type="number"
+                    min={0.1}
+                    step={0.1}
+                    value={reloadSeconds}
+                    onChange={(e) => setReloadSeconds(Math.max(0.1, Number(e.target.value)))}
+                    className="rounded border border-cream/15 bg-black/40 px-3 py-2.5 font-mono text-sm text-cream focus:border-gold/60 focus:outline-none transition-colors tabular-nums"
+                  />
+                </label>
+              </div>
             </div>
 
+            {/* Results */}
             {result && (
-              <div className="flex flex-col gap-3 border-t border-cream/10 pt-4">
+              <div className="flex flex-col gap-3 border-t border-cream/10 pt-5">
+                <SectionHeader label="Resultado calculado" />
                 <BreachBadge outcome={result.outcome} />
 
                 {result.outcome.canBreach ? (
                   <>
-                    {/* Hero cards: os dois números mais importantes */}
                     <div className="grid grid-cols-2 gap-3">
-                      <div className="flex flex-col items-center rounded-lg border border-rust/30 bg-rust/10 px-3 py-4 text-center">
+                      {/* Breach card */}
+                      <div className="flex flex-col rounded border border-rust/25 bg-rust/8 p-4">
+                        <span className="font-mono text-[9px] tracking-[0.2em] text-rust/60 uppercase mb-2">
+                          {result.outcome.ignoresThreshold ? 'Breach' : 'Hits p/ breach'}
+                        </span>
                         {result.outcome.ignoresThreshold ? (
-                          <span className="text-xl font-bold leading-none text-rust">imediato</span>
+                          <span className="font-mono text-lg font-bold text-rust leading-none">IMEDIATO</span>
                         ) : (
-                          <span className="text-4xl font-bold leading-none tabular-nums text-rust">
+                          <span className="font-mono text-4xl font-bold tabular-nums text-rust leading-none">
                             {formatNumber(result.outcome.hitsToOpenBreach)}
                           </span>
                         )}
-                        <span className="mt-2 text-[10px] uppercase tracking-wide text-cream/50">
-                          {result.outcome.ignoresThreshold ? 'breach imediato' : 'hits p/ breach'}
-                        </span>
                         {!weapon.placed && result.timeOpenBreach !== null && (
-                          <span className="mt-1 text-xs text-cream/40">
+                          <span className="mt-2 font-mono text-[10px] text-rust/50">
                             {formatSeconds(result.timeOpenBreach)}
                           </span>
                         )}
                       </div>
-                      <div className="flex flex-col items-center rounded-lg border border-gold/25 bg-gold/10 px-3 py-4 text-center">
-                        <span className="text-4xl font-bold leading-none tabular-nums text-gold">
+
+                      {/* Destroy card */}
+                      <div className="flex flex-col rounded border border-gold/25 bg-gold/8 p-4">
+                        <span className="font-mono text-[9px] tracking-[0.2em] text-gold/60 uppercase mb-2">
+                          Hits p/ destruir
+                        </span>
+                        <span className="font-mono text-4xl font-bold tabular-nums text-gold leading-none">
                           {formatNumber(result.outcome.hitsToDestroy)}
                         </span>
-                        <span className="mt-2 text-[10px] uppercase tracking-wide text-cream/50">
-                          hits p/ destruir
-                        </span>
                         {!weapon.placed && result.timeDestroy !== null && (
-                          <span className="mt-1 text-xs text-cream/40">
+                          <span className="mt-2 font-mono text-[10px] text-gold/50">
                             {formatSeconds(result.timeDestroy)}
                           </span>
                         )}
                       </div>
                     </div>
 
-                    {/* Info secundária */}
-                    <div className="flex items-center justify-between rounded-md bg-black/30 px-3 py-2">
-                      <span className="text-xs text-cream/60">Dano por acerto</span>
-                      <span className="text-xs tabular-nums text-cream">
+                    {/* Damage per hit */}
+                    <div className="flex items-center justify-between rounded border border-cream/8 bg-black/20 px-3 py-2">
+                      <span className="font-mono text-[10px] text-cream/40 uppercase tracking-wider">Dano por acerto</span>
+                      <span className="font-mono text-xs tabular-nums text-cream/80">
                         {formatNumber(result.perHit)} HP
                         {shelterActive && (
-                          <span className="ml-1 text-olive/70">(shelter ativo)</span>
+                          <span className="ml-1.5 text-olive/60">(shelter ativo)</span>
                         )}
                         {result.outcome.breachingModifier !== 1 && (
-                          <span className="ml-1 text-cream/50">
-                            (×{result.outcome.breachingModifier} no breach)
+                          <span className="ml-1.5 text-cream/30">
+                            ×{result.outcome.breachingModifier} no breach
                           </span>
                         )}
                       </span>
                     </div>
                   </>
                 ) : (
-                  <p className="rounded-md bg-rust/10 px-3 py-2 text-xs text-rust">
+                  <p className="rounded border border-rust/20 bg-rust/8 px-3 py-2.5 font-mono text-[10px] leading-relaxed text-rust/80">
                     {weapon.label} ({weapon.damageTypeName}){' '}
-                    <strong>não causa breach em estruturas</strong> — reduz HP compartilhado mas não
+                    <strong className="text-rust">não causa breach em estruturas</strong> — reduz HP compartilhado mas não
                     destrói peças. Use explosivo ou demolição para dar breach.
                   </p>
                 )}
               </div>
             )}
 
-            <p className="text-[10px] leading-relaxed text-cream/40">
+            <p className="font-mono text-[9px] leading-relaxed text-cream/25 border-t border-cream/8 pt-3 tracking-wide">
               {weapon.placed
-                ? 'Munição colocada (satchel/tripé) — conta o nº de cargas, sem tempo de recarga.'
-                : '"Recarga" é o tempo por tiro de cada canhão (varia por arma e crew).'}{' '}
-              <strong className="text-cream/60">T3 molhado</strong> = concreto recém-construído (10×
-              dano na janela de cura de 18h);{' '}
-              <strong className="text-cream/60">T3 seco</strong> = curado.
+                ? 'Munição colocada (satchel/tripé) — conta nº de cargas, sem tempo de recarga.'
+                : '"Recarga" = tempo por tiro de cada canhão (varia por arma e crew).'}{' '}
+              <span className="text-cream/40">T3 molhado</span> = concreto recém-construído (10× dano na janela de 18h);{' '}
+              <span className="text-cream/40">T3 seco</span> = curado.
             </p>
           </div>
         </section>
 
-        {/* Painel direito: estatísticas do bunker */}
-        <aside className="w-full lg:w-96">
+        {/* Right panel — Bunker stats */}
+        <aside className="w-full lg:w-[22rem]">
           <ImportedBunkerPanel shelterCount={shelterCount} />
         </aside>
       </div>
+    </div>
+  )
+}
+
+function StatChip({ label, value, color }: { label: string; value: string; color: string }) {
+  return (
+    <div className="flex items-center gap-1.5 rounded border border-cream/10 bg-black/30 px-2 py-1">
+      <span className="font-mono text-[8px] tracking-widest text-cream/30 uppercase">{label}</span>
+      <span className={`font-mono text-xs font-bold tabular-nums ${color}`}>{value}</span>
     </div>
   )
 }
