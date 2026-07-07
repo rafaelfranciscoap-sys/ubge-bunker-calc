@@ -62,29 +62,31 @@ describe('hitsToDestroy — reproduz o painel do foxholeplanner', () => {
 })
 
 describe('breachOutcome — modelo de brecha real (datamine Update 65)', () => {
-  // Bunker do exemplo de import: HP total 18.940, vida de brecha 6.882.
+  // Bunker do exemplo de import: HP total 18.940, vida de brecha (breachable/fase 2) 6.882.
+  // A brecha só abre depois de REMOVER (HP total − vida de brecha) = 12.058 HP — essa é a fase 1.
   const HP = 18940
   const BREACHABLE = 6882
+  const PHASE1_HP = HP - BREACHABLE // 12.058 — HP a remover antes do breach abrir
 
   it('HE (150mm) brecha só após o limiar; duas fases somam a destruição total', () => {
-    const o = breachOutcome(HP, BREACHABLE, weapon('150mm'), 't3_dry')
+    const o = breachOutcome(HP, PHASE1_HP, weapon('150mm'), 't3_dry')
     expect(o.canBreach).toBe(true)
     expect(o.ignoresThreshold).toBe(false)
-    // fase 1: 6882/225 = 30.6 → 31 acertos até abrir a brecha
-    expect(o.hitsToOpenBreach).toBe(31)
-    // total: 31 + ceil(12058/225)=54 → 85
+    // fase 1: 12058/225 = 53.6 → 54 acertos até abrir a brecha
+    expect(o.hitsToOpenBreach).toBe(54)
+    // total: 54 + ceil(6882/225)=31 → 85
     expect(o.hitsToDestroy).toBe(85)
   })
 
   it('AP (68mm) NÃO brecha estruturas → destruição impossível (Infinity)', () => {
-    const o = breachOutcome(HP, BREACHABLE, weapon('68mm'), 't3_dry')
+    const o = breachOutcome(HP, PHASE1_HP, weapon('68mm'), 't3_dry')
     expect(o.canBreach).toBe(false)
     expect(o.hitsToDestroy).toBe(Infinity)
     expect(o.hitsToOpenBreach).toBe(Infinity)
   })
 
   it('250mm Fury (DemolitionBreaching) ignora o limiar → brecha imediata (0 acertos até abrir)', () => {
-    const o = breachOutcome(HP, BREACHABLE, weapon('250mm (Fury)'), 't3_dry')
+    const o = breachOutcome(HP, PHASE1_HP, weapon('250mm (Fury)'), 't3_dry')
     expect(o.ignoresThreshold).toBe(true)
     expect(o.hitsToOpenBreach).toBe(0)
     // 18940/800 = 23.7 → 24
@@ -92,7 +94,7 @@ describe('breachOutcome — modelo de brecha real (datamine Update 65)', () => {
   })
 
   it('Havoc Charge (Demolition ×3) aplica o breaching modifier', () => {
-    const o = breachOutcome(HP, BREACHABLE, weapon('Havoc Charge'), 't3_dry')
+    const o = breachOutcome(HP, PHASE1_HP, weapon('Havoc Charge'), 't3_dry')
     expect(o.breachingModifier).toBe(3)
     // 1950 × 3 = 5850 por carga; 18940/5850 = 3.24 → 4 cargas
     expect(o.hitsToDestroy).toBe(4)

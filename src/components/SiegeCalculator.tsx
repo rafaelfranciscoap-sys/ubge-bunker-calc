@@ -77,8 +77,11 @@ export function SiegeCalculator() {
   const result = useMemo(() => {
     if (!data || data.hpTotal === null) return null
     const perHit = effectiveDamagePerHit(weapon, column, shelterBonusPP)
+    // data.breachHpAbsolute = HP que RESTA quando a brecha se expõe (foxbunker: "breach after Xhp"
+    // já convertido para o complemento). A fase 1 precisa da quantidade a REMOVER até lá.
     const breachableHealth = data.breachHpAbsolute ?? 0
-    const outcome = breachOutcome(data.hpTotal, breachableHealth, weapon, column, shelterBonusPP)
+    const phase1Hp = Math.max(0, data.hpTotal - breachableHealth)
+    const outcome = breachOutcome(data.hpTotal, phase1Hp, weapon, column, shelterBonusPP)
     const shotsPerSecond = guns > 0 && reloadSeconds > 0 ? guns / reloadSeconds : 0
     const timeOpenBreach =
       Number.isFinite(outcome.hitsToOpenBreach) && outcome.hitsToOpenBreach > 0 && shotsPerSecond > 0
