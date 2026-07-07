@@ -39,12 +39,16 @@ export const BUNKER_COLUMNS: { key: BunkerColumnKey; label: string; profileTier:
   { key: 't3_dry', label: 'T3 dry', profileTier: 't3', wet: false },
 ]
 
+export type WeaponIconType = 'grenade' | 'round' | 'ap' | 'arty' | 'rocket' | 'satchel'
+
 export interface Weapon {
   key: string
   /** Rótulo curto como no painel do foxholeplanner (ex.: "150mm", "HE Grenade"). */
   label: string
   damageTypeName: string
   damage: number
+  /** Categoria de ícone visual para a tabela de destruição. */
+  iconType: WeaponIconType
   /** Fração de dano por tier de estrutura (1 − resistência). */
   profiles: { t1: number; t2: number; t3: number }
   /** Ajuste extra por tier (default 1 quando ausente) — fator por-arma do foxholeplanner
@@ -107,28 +111,45 @@ const EXPLOSIVE_PROFILE = { t1: 0.75, t2: 0.65, t3: 0.25 }
 const AP_PROFILE = { t1: 0.25, t2: 0.25, t3: 0.07 }
 const DEMOLITION_PROFILE = { t1: 1, t2: 1, t3: 1 }
 
-// Ordem espelha o painel do print. Aliases de dano confirmados em data.js.
+// Ordem espelha o painel "Bunker Destruction Stats" do foxholeplanner.
+// Dados confirmados do datamine Update 65 (aba Ammo + Damage Types + Damage Profiles).
 export const WEAPONS: Weapon[] = [
-  { key: 'hegrenade', label: 'HE Grenade', damageTypeName: 'Explosive', damage: 240, profiles: EXPLOSIVE_PROFILE, multipliers: { t2: 0.95, t3: 0.95 } },
-  { key: 'helauncher', label: 'HE Launcher', damageTypeName: 'Explosive', damage: 400, profiles: EXPLOSIVE_PROFILE, multipliers: { t2: 0.95, t3: 0.95 } },
-  { key: '30mm', label: '30mm', damageTypeName: 'Explosive', damage: 400, profiles: EXPLOSIVE_PROFILE, multipliers: { t2: 0.99, t3: 0.99 } },
-  { key: 'rpg', label: 'RPG', damageTypeName: 'Explosive', damage: 550, profiles: EXPLOSIVE_PROFILE, multipliers: { t3: 0.99 } },
-  { key: '40mm', label: '40mm', damageTypeName: 'Explosive', damage: 600, profiles: EXPLOSIVE_PROFILE },
-  { key: '75mm', label: '75mm', damageTypeName: 'Explosive', damage: 1750, profiles: EXPLOSIVE_PROFILE },
-  { key: '68mm', label: '68mm', damageTypeName: 'Armour Piercing', damage: 600, profiles: AP_PROFILE },
-  { key: '94.5mm', label: '94.5mm', damageTypeName: 'Armour Piercing', damage: 1750, profiles: AP_PROFILE },
-  { key: 'mortar', label: 'Mortar', damageTypeName: 'High Explosive', damage: 300, profiles: EXPLOSIVE_PROFILE },
-  { key: '120mm', label: '120mm', damageTypeName: 'High Explosive', damage: 400, profiles: EXPLOSIVE_PROFILE },
-  { key: '150mm', label: '150mm', damageTypeName: 'High Explosive', damage: 900, profiles: EXPLOSIVE_PROFILE },
-  // 300mm usa BPHighExplosiveBreachingLeakDamageType: ignora limiar de brecha E bypassa shelter.
-  { key: '300mm', label: '300mm', damageTypeName: 'High Explosive', damage: 3000, profiles: EXPLOSIVE_PROFILE, bypassesShelter: true, ignoresBreachThreshold: true },
+  // ── Explosivos leves ─────────────────────────────────────────────────────────
+  { key: 'hegrenade', label: 'HE Grenade', iconType: 'grenade', damageTypeName: 'Explosive', damage: 240, profiles: EXPLOSIVE_PROFILE, multipliers: { t2: 0.95, t3: 0.95 } },
+  { key: 'helauncher', label: 'HE Launcher', iconType: 'grenade', damageTypeName: 'Explosive', damage: 400, profiles: EXPLOSIVE_PROFILE, multipliers: { t2: 0.95, t3: 0.95 } },
+  // ── Munição de veículo / canhão ──────────────────────────────────────────────
+  { key: '30mm', label: '30mm', iconType: 'round', damageTypeName: 'Explosive', damage: 400, profiles: EXPLOSIVE_PROFILE, multipliers: { t2: 0.99, t3: 0.99 } },
+  { key: 'rpg', label: 'RPG', iconType: 'round', damageTypeName: 'Explosive', damage: 550, profiles: EXPLOSIVE_PROFILE, multipliers: { t3: 0.99 } },
+  { key: '40mm', label: '40mm', iconType: 'round', damageTypeName: 'Explosive', damage: 600, profiles: EXPLOSIVE_PROFILE },
+  { key: '75mm', label: '75mm', iconType: 'round', damageTypeName: 'Explosive', damage: 1750, profiles: EXPLOSIVE_PROFILE },
+  // ── Armour Piercing ──────────────────────────────────────────────────────────
+  { key: '68mm', label: '68mm', iconType: 'ap', damageTypeName: 'Armour Piercing', damage: 600, profiles: AP_PROFILE },
+  { key: '94.5mm', label: '94.5mm', iconType: 'ap', damageTypeName: 'Armour Piercing', damage: 1750, profiles: AP_PROFILE },
+  // ── Artilharia (HE) ──────────────────────────────────────────────────────────
+  { key: 'mortar', label: 'Mortar', iconType: 'arty', damageTypeName: 'High Explosive', damage: 300, profiles: EXPLOSIVE_PROFILE },
+  { key: '120mm', label: '120mm', iconType: 'arty', damageTypeName: 'High Explosive', damage: 400, profiles: EXPLOSIVE_PROFILE },
+  { key: '150mm', label: '150mm', iconType: 'arty', damageTypeName: 'High Explosive', damage: 900, profiles: EXPLOSIVE_PROFILE },
+  // Rocket (3C-High Explosive Rocket) — BPHighExplosiveFalloffDamageType, afetado por shelter.
+  { key: 'rocket', label: 'Rocket', iconType: 'rocket', damageTypeName: 'High Explosive', damage: 700, profiles: EXPLOSIVE_PROFILE },
+  // Fire Rocket (4C-Fire Rocket) — BPIncendiaryHighExplosiveDamageType. Perfil idêntico ao HE
+  // (Tier1/2/3Structure mig = 0.25/0.35/0.75), afetado por shelter, NÃO brecha bunkers.
+  { key: 'firerocket', label: 'Fire Rocket', iconType: 'rocket', damageTypeName: 'Incendiary', damage: 145, profiles: EXPLOSIVE_PROFILE },
+  // Shatter Missile — BPDemolitionBreachingFalloffDamageType: ignora limiar de brecha.
+  { key: 'shattermissile', label: 'Shatter Missile', iconType: 'rocket', damageTypeName: 'Demolition', damage: 250, profiles: DEMOLITION_PROFILE, ignoresBreachThreshold: true },
+  // Hydra's usa BPDemolitionDamageType: NÃO ignora limiar de brecha.
+  { key: 'hydras', label: "Hydra's", iconType: 'rocket', damageTypeName: 'Demolition', damage: 550, profiles: DEMOLITION_PROFILE, breachingModifier: 1.2 },
+  // Raidbreaker (Mark II Raidbreaker) — BPHighExplosiveRuinDamageType, afetado por shelter.
+  { key: 'raidbreaker', label: 'Raidbreaker', iconType: 'arty', damageTypeName: 'High Explosive', damage: 1200, profiles: EXPLOSIVE_PROFILE },
+  // ── Artilharia de cerco ───────────────────────────────────────────────────────
   // 250mm "Fury" usa BPDemolitionBreachingDamageType: ignora limiar de brecha.
-  { key: '250mm-fury', label: '250mm (Fury)', damageTypeName: 'Demolition', damage: 800, profiles: DEMOLITION_PROFILE, ignoresBreachThreshold: true },
+  { key: '250mm-fury', label: '250mm (Fury)', iconType: 'satchel', damageTypeName: 'Demolition', damage: 800, profiles: DEMOLITION_PROFILE, ignoresBreachThreshold: true },
   // 250mm "Purity" usa BPDemolitionDamageType: NÃO ignora limiar (precisa de fase 1).
-  { key: '250mm-purity', label: '250mm (Purity)', damageTypeName: 'Demolition', damage: 800, profiles: DEMOLITION_PROFILE },
-  // Hydra's e Alligator usam BPDemolitionDamageType: NÃO ignoram limiar de brecha.
-  { key: 'hydras', label: "Hydra's", damageTypeName: 'Demolition', damage: 550, profiles: DEMOLITION_PROFILE, breachingModifier: 1.2 },
-  { key: 'alligator', label: 'Alligator (satchel)', damageTypeName: 'Demolition', damage: 550, profiles: DEMOLITION_PROFILE, breachingModifier: 3, placed: true },
+  { key: '250mm-purity', label: '250mm (Purity)', iconType: 'satchel', damageTypeName: 'Demolition', damage: 800, profiles: DEMOLITION_PROFILE },
+  // 300mm usa BPHighExplosiveBreachingLeakDamageType: ignora limiar E bypassa shelter.
+  { key: '300mm', label: '300mm', iconType: 'arty', damageTypeName: 'High Explosive', damage: 3000, profiles: EXPLOSIVE_PROFILE, bypassesShelter: true, ignoresBreachThreshold: true },
+  // ── Cargas de demolição ───────────────────────────────────────────────────────
+  // Alligator usa BPDemolitionDamageType: NÃO ignora limiar de brecha.
+  { key: 'alligator', label: 'Alligator', iconType: 'satchel', damageTypeName: 'Demolition', damage: 550, profiles: DEMOLITION_PROFILE, breachingModifier: 3, placed: true },
   // Havoc usa BPDemolitionBreachingDamageType: ignora limiar de brecha.
-  { key: 'havoc', label: 'Havoc Charge', damageTypeName: 'Demolition', damage: 1950, profiles: DEMOLITION_PROFILE, breachingModifier: 3, placed: true, ignoresBreachThreshold: true },
+  { key: 'havoc', label: 'Havoc Charge', iconType: 'satchel', damageTypeName: 'Demolition', damage: 1950, profiles: DEMOLITION_PROFILE, breachingModifier: 3, placed: true, ignoresBreachThreshold: true },
 ]

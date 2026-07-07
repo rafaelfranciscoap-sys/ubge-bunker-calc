@@ -3,7 +3,7 @@ import { DECAY_BY_TIER, inferTierFromImport, totalDecayHours } from '../data/dec
 import { SHELTER_AFFECTED_TYPES, WEAPONS, BUNKER_COLUMNS, type BunkerColumnKey, type Weapon } from '../data/weapons'
 import { integrityClass, shelterBonusPPForWeapon, weaponDestructionRow } from '../engine/bunkerDestruction'
 import { useImportedBunkerStore } from '../store/useImportedBunkerStore'
-import { ChevronIcon, MaintenanceCanIcon, MaterialCrateIcon, ShellIcon } from './icons'
+import { ChevronIcon, MaintenanceCanIcon, MaterialCrateIcon, WeaponIcon } from './icons'
 
 function formatHours(hours: number): string {
   return `${new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 0 }).format(hours)}h`
@@ -234,7 +234,7 @@ export function ImportedBunkerPanel({ shelterCount = 0 }: { shelterCount?: numbe
                   <tr key={weapon.key} className="border-t border-cream/10">
                     <td className="py-1 pr-2">
                       <span className="flex items-center gap-1.5">
-                        <ShellIcon className={`shrink-0 ${shelterAffected ? 'text-olive/70' : 'text-cream/50'}`} />
+                        <WeaponIcon iconType={weapon.iconType} className={`shrink-0 ${shelterAffected ? 'text-olive/70' : 'text-cream/50'}`} />
                         <span className={shelterAffected ? 'text-olive/90' : undefined}>
                           {weapon.label}
                         </span>

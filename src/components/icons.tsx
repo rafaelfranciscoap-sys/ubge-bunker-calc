@@ -91,7 +91,10 @@ export function ChevronIcon(props: SVGProps<SVGSVGElement>) {
   )
 }
 
-// Projétil/concha, para as linhas da tabela de destruição.
+// ── Ícones de arma para a tabela de destruição ────────────────────────────────
+// Cada forma é distinta o suficiente para ser reconhecível a 14px.
+
+// Artilharia (obuses, morteiros, 120/150/300mm, Raidbreaker) — ogiva alongada.
 export function ShellIcon(props: SVGProps<SVGSVGElement>) {
   return (
     <IconBase {...props}>
@@ -99,6 +102,80 @@ export function ShellIcon(props: SVGProps<SVGSVGElement>) {
       <path d="M5.5 12 H10.5 V14 H5.5 Z" />
     </IconBase>
   )
+}
+
+// Granada / lançador HE — corpo redondo com alavanca e pino.
+export function GrenadeIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <IconBase {...props}>
+      <circle cx="8" cy="9.5" r="4.5" />
+      <path d="M6 5.2 H10 V7 H6 Z" />
+      <path d="M9.8 5.5 L12 3.5" />
+      <circle cx="12.4" cy="3.2" r="0.8" />
+    </IconBase>
+  )
+}
+
+// Munição de tanque / veículo (30mm, 40mm, 75mm, RPG) — projétil cilíndrico curto.
+export function RoundIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <IconBase {...props}>
+      <path d="M6 5.5 Q8 2.5 10 5.5 V12 H6 Z" />
+      <path d="M6 12 H10 V13.5 H6 Z" />
+    </IconBase>
+  )
+}
+
+// Armour Piercing (68mm, 94.5mm) — dardo longo e pontiagudo.
+export function ApShellIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <IconBase {...props}>
+      <path d="M8 1 L10 4.5 V13.5 H6 V4.5 Z" />
+      <path d="M5.5 13.5 H10.5 V15 H5.5 Z" />
+    </IconBase>
+  )
+}
+
+// Foguete / míssil (Rocket, Fire Rocket, Hydra's, Shatter Missile) — corpo com aletas.
+export function RocketIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <IconBase {...props}>
+      {/* corpo */}
+      <path d="M6.5 3.5 Q8 1 9.5 3.5 V10.5 H6.5 Z" />
+      {/* aletas */}
+      <path d="M6.5 10.5 L4.5 13 V10.5 Z" />
+      <path d="M9.5 10.5 L11.5 13 V10.5 Z" />
+      {/* fogo */}
+      <path d="M7.2 10.5 Q8 12.5 8.8 10.5" strokeDasharray="0" />
+    </IconBase>
+  )
+}
+
+// Carga de demolição / satchel (Alligator, Havoc, 250mm) — bloco com fuse.
+export function SatchelIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <IconBase {...props}>
+      <rect x="3" y="5.5" width="10" height="7" rx="1.2" />
+      <path d="M13 7 Q15 5 13.5 3" />
+      <circle cx="13.2" cy="2.6" r="0.9" />
+      <path d="M5.5 5.5 V4 M10.5 5.5 V4" />
+    </IconBase>
+  )
+}
+
+import type { WeaponIconType } from '../data/weapons'
+
+// Componente unificado: renderiza o ícone correto pelo iconType da arma.
+export function WeaponIcon({ iconType, ...props }: { iconType: WeaponIconType } & SVGProps<SVGSVGElement>) {
+  switch (iconType) {
+    case 'grenade': return <GrenadeIcon {...props} />
+    case 'round':   return <RoundIcon {...props} />
+    case 'ap':      return <ApShellIcon {...props} />
+    case 'rocket':  return <RocketIcon {...props} />
+    case 'satchel': return <SatchelIcon {...props} />
+    case 'arty':
+    default:        return <ShellIcon {...props} />
+  }
 }
 
 // Galão de suprimentos de manutenção.
