@@ -1,0 +1,13 @@
+@import "tailwindcss";
+
+@theme {
+  --color-bg-dark: #1C1810;
+  --color-gold: #C9A227;
+  --color-olive: #7C8B5A;
+  --color-rust: #A64B2A;
+  --color-cream: #ddd8c0;
+}
+
+body {
+  margin: 0;
+}
