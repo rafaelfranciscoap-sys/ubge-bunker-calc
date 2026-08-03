@@ -71,6 +71,11 @@ function formatSeconds(seconds: number | null): string {
   return `${minutes}m ${rest.toString().padStart(2, '0')}s`
 }
 
+// Breaching é um EVENTO DE CHANCE, não uma consequência automática de zerar HP: abaixo do
+// Breachable Health cada acerto tem uma chance de brechar, começando em 0% e subindo até 25%
+// conforme a vida cai (wiki + declaração de dev). Armas de "always-chance-to-breach" (300mm,
+// Demolition Breaching) ficam fixas em 25%. Os rótulos e textos aqui existem para não vender
+// certeza determinística onde o jogo rola dado — ver BREACH_CHANCE_NOTE abaixo.
 function BreachBadge({ outcome }: { outcome: BreachOutcome }) {
   const style = !outcome.canBreach
     ? {
@@ -79,11 +84,11 @@ function BreachBadge({ outcome }: { outcome: BreachOutcome }) {
       }
     : outcome.ignoresThreshold
       ? {
-          text: 'Instant breach · ignores the breach threshold',
+          text: 'Can breach from the first hit · ignores the threshold',
           cls: 'border-good/45 bg-good/10 text-good',
         }
       : {
-          text: 'Breaches only after bunker HP drops to the threshold',
+          text: 'Breaching only becomes possible once HP drops to the threshold',
           cls: 'border-gold/40 bg-gold/10 text-gold',
         }
   return (
@@ -488,15 +493,17 @@ export function SiegeCalculator() {
                         />
                         {result.outcome.ignoresThreshold ? (
                           <span className="relative font-display text-2xl font-bold leading-none text-danger">
-                            INSTANT
+                            FROM HIT 1
                           </span>
                         ) : (
                           <span className="relative font-display text-[2.75rem] font-bold leading-none text-danger">
                             {formatNumber(result.outcome.hitsToOpenBreach)}
                           </span>
                         )}
+                        {/* "to threshold", não "to breach": este número é quando brechar se torna
+                            POSSÍVEL, não quando acontece. A brecha em si é rolagem de chance. */}
                         <span className="field-label relative mt-2 !text-[10px] !tracking-[0.1em]">
-                          {result.outcome.ignoresThreshold ? 'Breach' : 'Hits to breach'}
+                          {result.outcome.ignoresThreshold ? 'Can breach' : 'Hits to threshold'}
                         </span>
                         {!weapon.placed && result.timeOpenBreach !== null && (
                           <span className="relative mt-1 text-xs text-cream/45">
@@ -516,7 +523,7 @@ export function SiegeCalculator() {
                           {formatNumber(result.outcome.hitsToDestroy)}
                         </span>
                         <span className="field-label relative mt-2 !text-[10px] !tracking-[0.1em]">
-                          Hits to destroy
+                          Hits of damage
                         </span>
                         {!weapon.placed && result.timeDestroy !== null && (
                           <span className="relative mt-1 text-xs text-cream/45">
@@ -549,6 +556,16 @@ export function SiegeCalculator() {
                         )}
                       </span>
                     </div>
+
+                    {/* Sem isto a tela vende certeza determinística onde o jogo rola dado. */}
+                    <p className="rounded-md border border-warn/25 bg-warn/8 px-2.5 py-2 text-[11px] leading-relaxed text-warn/90">
+                      <strong>Breaching is a dice roll, not a countdown.</strong> Reaching the
+                      threshold does not break anything by itself — below it, every hit gets a{' '}
+                      <em>chance</em> to breach, starting near 0% and rising toward 25% as HP falls
+                      (weapons that ignore the threshold sit at a flat 25%). So read the left number
+                      as "when breaching becomes possible" and the right one as total damage
+                      throughput — a planning baseline, not a guaranteed shell count.
+                    </p>
                   </>
                 ) : (
                   <p className="rounded-md border border-danger/25 bg-danger/10 px-3 py-2 text-xs leading-relaxed text-danger">

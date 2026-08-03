@@ -99,8 +99,18 @@ export function WeaponComparison({
                 <tr className="border-b border-cream/15 font-display text-[11px] uppercase tracking-wide text-cream/50">
                   <th className="py-1.5 text-left font-medium">Weapon</th>
                   <th className="py-1.5 pl-2 text-right font-medium">Dmg/hit</th>
-                  <th className="py-1.5 pl-2 text-right font-medium">Breach</th>
-                  <th className="py-1.5 pl-2 text-right font-medium">Destroy</th>
+                  <th
+                    className="py-1.5 pl-2 text-right font-medium"
+                    title="Hits until breaching becomes possible — not until it happens"
+                  >
+                    Threshold
+                  </th>
+                  <th
+                    className="py-1.5 pl-2 text-right font-medium"
+                    title="Total damage throughput; breaching itself is a chance roll"
+                  >
+                    Damage
+                  </th>
                   <th className="py-1.5 pl-2 text-right font-medium">Time</th>
                 </tr>
               </thead>
@@ -133,7 +143,7 @@ export function WeaponComparison({
                         {!outcome.canBreach
                           ? '—'
                           : outcome.ignoresThreshold
-                            ? 'instant'
+                            ? 'from 1'
                             : formatNumber(outcome.hitsToOpenBreach)}
                       </td>
                       <td className="py-1.5 pl-2 text-right font-semibold text-gold/90">
@@ -149,9 +159,12 @@ export function WeaponComparison({
             </table>
           </div>
           <p className="mt-2 text-[11px] leading-relaxed text-cream/40">
-            Click a row to load that weapon into the planner. "Time" assumes {guns}{' '}
-            {guns === 1 ? 'gun' : 'guns'} firing at the platform's datamine cycle — blank where the
-            datamine gives no clear siege platform (infantry weapons). Faded rows cannot breach.
+            Click a row to load that weapon into the planner. <strong>Threshold</strong> = hits
+            until breaching becomes <em>possible</em>; below it each hit only gets a chance to
+            breach. <strong>Damage</strong> = total throughput, a planning baseline rather than a
+            guaranteed shell count. "Time" assumes {guns} {guns === 1 ? 'gun' : 'guns'} at the
+            platform's datamine cycle — blank where the datamine gives no clear siege platform
+            (infantry weapons). Faded rows cannot breach at all.
           </p>
         </div>
       )}
