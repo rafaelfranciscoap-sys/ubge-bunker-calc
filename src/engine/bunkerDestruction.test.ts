@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { WEAPONS } from '../data/weapons'
+import { WEAPONS, weaponBreach } from '../data/weapons'
 import {
   breachOutcome,
   concreteDryingMultiplier,
@@ -95,18 +95,20 @@ describe('breachOutcome — modelo de brecha real (datamine Update 65)', () => {
   // Invariante: quando o breaching modifier é 1, a fase 2 não bate mais forte que a fase 1,
   // então o total TEM de ser idêntico ao da tabela de destruição. Se as duas telas divergirem
   // de novo, este teste quebra.
-  it('com breachingModifier 1, o total bate exatamente com hitsToDestroy da tabela', () => {
+  // Agora que o modifier saiu do dano, a invariante vale para TODA arma que brecha, incluindo
+  // Havoc, Alligator e Hydra's. Se alguém reintroduzir o modifier no caminho de dano, quebra aqui.
+  it('para toda arma que brecha, o total bate exatamente com hitsToDestroy da tabela', () => {
     const cases = [
       { hp: 28189, phase1: 23544 },
       { hp: 18940, phase1: 12058 },
       { hp: 24221, phase1: 17383 },
       { hp: 13791, phase1: 8000 },
     ]
-    for (const w of ['150mm', '120mm', 'Mortar', '75mm'] as const) {
+    const breachers = WEAPONS.filter((w) => weaponBreach(w).breachesBunkers)
+    expect(breachers.some((w) => (w.breachingModifier ?? 1) !== 1)).toBe(true) // cobre os ×1.2/×3
+    for (const weap of breachers) {
       for (const col of ['t1', 't2', 't3_dry', 't3_wet'] as const) {
         for (const { hp, phase1 } of cases) {
-          const weap = weapon(w)
-          expect(weap.breachingModifier ?? 1).toBe(1)
           expect(breachOutcome(hp, phase1, weap, col).hitsToDestroy).toBe(
             hitsToDestroy(hp, weap, col),
           )
@@ -130,11 +132,15 @@ describe('breachOutcome — modelo de brecha real (datamine Update 65)', () => {
     expect(o.hitsToDestroy).toBe(24)
   })
 
-  it('Havoc Charge (Demolition ×3) aplica o breaching modifier', () => {
+  // O Breaching Modifier multiplica a CHANCE de brechar, não o dano (wiki oficial: Shatter
+  // Missile tem "decreased chance of causing a Breach (x0.7)"). Então ele é exposto no
+  // resultado como informação, mas não entra na conta de acertos.
+  it('Havoc Charge expõe o breaching modifier sem aplicá-lo ao dano', () => {
     const o = breachOutcome(HP, PHASE1_HP, weapon('Havoc Charge'), 't3_dry')
     expect(o.breachingModifier).toBe(3)
-    // 1950 × 3 = 5850 por carga; 18940/5850 = 3.24 → 4 cargas
-    expect(o.hitsToDestroy).toBe(4)
+    // O ×3 fica só como informação de chance. Dano continua 1950/carga (Demolition passa 100%),
+    // então 18940/1950 = 9.71 → 10 cargas. Antes dávamos 4, dividindo o dano por 3 sem base.
+    expect(o.hitsToDestroy).toBe(10)
   })
 })
 

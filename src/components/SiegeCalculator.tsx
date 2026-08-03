@@ -579,8 +579,11 @@ export function SiegeCalculator({ onOpenHowItWorks }: SiegeCalculatorProps = {})
                           <span className="ml-1 text-good/75">(shelter active)</span>
                         )}
                         {result.outcome.breachingModifier !== 1 && (
-                          <span className="ml-1 text-cream/50">
-                            (×{result.outcome.breachingModifier} in breach)
+                          <span
+                            className="ml-1 text-cream/50"
+                            title="Breaching Modifier multiplies the chance of causing a breach, not the damage dealt"
+                          >
+                            (×{result.outcome.breachingModifier} breach chance)
                           </span>
                         )}
                       </span>
@@ -591,9 +594,10 @@ export function SiegeCalculator({ onOpenHowItWorks }: SiegeCalculatorProps = {})
                       <strong>Breaching is a dice roll, not a countdown.</strong> Reaching the
                       threshold does not break anything by itself — below it, every hit gets a{' '}
                       <em>chance</em> to breach, starting near 0% and rising toward 25% as HP falls
-                      (weapons that ignore the threshold sit at a flat 25%). So read the left number
-                      as "when breaching becomes possible" and the right one as total damage
-                      throughput — a planning baseline, not a guaranteed shell count.
+                      (weapons that ignore the threshold sit at a flat 25%). Some ammo carries a
+                      Breaching Modifier that multiplies <em>that chance</em> — not its damage. So
+                      read the left number as "when breaching becomes possible" and the right one as
+                      total damage throughput: a planning baseline, not a guaranteed shell count.
                     </p>
                   </>
                 ) : (

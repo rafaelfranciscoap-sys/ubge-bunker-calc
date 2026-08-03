@@ -116,22 +116,38 @@ export function breachOutcome(
     }
   }
 
-  const breachPerHit = perHit * modifier
-
+  // ATENÇÃO — o Breaching Modifier NÃO multiplica dano.
+  // Ele multiplica a CHANCE de brechar. Confirmado na wiki oficial, em duas páginas:
+  //   Trench & Bunker Construction System: "A breach has a chance to occur when a bunker piece
+  //     is hit ... The chance to breach starts below the Breachable Health and increases the
+  //     lower the health is."
+  //   Shatter Missile: "When hitting Bunkers, it has a decreased chance of causing a Breach
+  //     (x0.7) however it can cause breaches even when the Bunker's health is above its
+  //     Breachable Health."
+  // Um modificador de 0.7 só faz sentido como multiplicador de chance — não existe munição
+  // que cause 30% menos dano num campo chamado "Breaching Modifier".
+  //
+  // Antes multiplicávamos o dano por ele, o que subestimava feio as cargas de demolição
+  // (Havoc ×3 aparecia com 1/3 dos acertos necessários). O modifier segue exposto no
+  // BreachOutcome porque é informação real e útil, mas como CHANCE — a UI rotula assim.
+  //
+  // Consequência: o dano por acerto é o mesmo antes e depois do limiar, então o total de
+  // acertos vira ceil(maxHealth / perHit) para toda arma que brecha, batendo sempre com a
+  // tabela de destruição.
   if (breach.ignoresBreachThreshold) {
-    // Brecha imediata (300mm / DemolitionBreaching): toda a destruição usa o modifier.
+    // Pode brechar desde o primeiro acerto; o dano continua sendo o dano normal.
     return {
       canBreach: true,
       ignoresThreshold: true,
       breachingModifier: modifier,
       hitsToOpenBreach: 0,
-      hitsToDestroy: Math.ceil(maxHealth / breachPerHit),
+      hitsToDestroy: Math.ceil(maxHealth / perHit),
     }
   }
 
   // Explosive/HE/DemolitionDamageType: dois estágios.
   // Fase 1: remover phase1Hp de HP (= SI × maxHP) até a rede atingir o limiar de brecha.
-  // Fase 2: destruir o que sobrou, agora com o breaching modifier.
+  // Fase 2: seguir batendo no que sobrou, já com a brecha possível.
   const phase1 = phase1Hp > 0 ? Math.ceil(phase1Hp / perHit) : 0
 
   // O tiro que cruza o limiar quase nunca para exatamente nele — o excedente é dano que JÁ foi
@@ -139,10 +155,8 @@ export function breachOutcome(
   // (`phase1 × perHit`) faz o total arredondar para cima duas vezes e inflar o resultado em 1.
   // Ex.: 28.189 HP, limiar em 4.645, 120mm a 100/tiro → fase 1 = ceil(23.544/100) = 236 tiros,
   // que entregam 23.600 (56 de excedente). Sobram 4.589, não 4.645: 46 tiros, não 47.
-  // Com breachingModifier = 1 isto faz o total fechar exatamente com ceil(maxHealth / perHit),
-  // que é o número da tabela de destruição — as duas telas passam a concordar sempre.
   const hpAfterPhase1 = Math.max(0, maxHealth - phase1 * perHit)
-  const phase2 = hpAfterPhase1 > 0 ? Math.ceil(hpAfterPhase1 / breachPerHit) : 0
+  const phase2 = hpAfterPhase1 > 0 ? Math.ceil(hpAfterPhase1 / perHit) : 0
   return {
     canBreach: true,
     ignoresThreshold: false,
