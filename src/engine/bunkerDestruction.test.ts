@@ -101,19 +101,23 @@ describe('breachOutcome — modelo de brecha real (datamine Update 65)', () => {
   })
 })
 
+// Janela de cura = 18h (64800s) — datamine Update 65, "Concrete Settle Duration Mins" = 1080.
+// A saturação no ×10 passa a valer abaixo de 64800/10 = 6480s (1.8h).
 describe('concreteDryingMultiplier', () => {
-  it('recém-construído (< 2.4h) satura em ×10', () => {
+  it('recém-construído (< 1.8h) satura em ×10', () => {
     expect(concreteDryingMultiplier(0)).toBe(10)
     expect(concreteDryingMultiplier(3600)).toBe(10)
   })
 
-  it('decai como 86400/tempo entre 2.4h e 24h', () => {
-    expect(concreteDryingMultiplier(43200)).toBeCloseTo(2) // 12h → ×2
-    expect(concreteDryingMultiplier(28800)).toBeCloseTo(3) // 8h → ×3
+  it('decai como 64800/tempo entre 1.8h e 18h', () => {
+    expect(concreteDryingMultiplier(43200)).toBeCloseTo(1.5) // 12h → ×1.5
+    expect(concreteDryingMultiplier(28800)).toBeCloseTo(2.25) // 8h → ×2.25
+    expect(concreteDryingMultiplier(6480)).toBeCloseTo(10) // 1.8h → limite do platô
   })
 
-  it('curado (>= 24h) é ×1', () => {
-    expect(concreteDryingMultiplier(86400)).toBe(1)
+  it('curado (>= 18h) é ×1', () => {
+    expect(concreteDryingMultiplier(64800)).toBe(1)
+    expect(concreteDryingMultiplier(86400)).toBe(1) // 24h: já curado há muito
     expect(concreteDryingMultiplier(999999)).toBe(1)
   })
 })

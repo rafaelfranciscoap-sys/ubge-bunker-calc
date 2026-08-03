@@ -578,8 +578,10 @@ export function SiegeCalculator() {
                 ? 'Placed charge (satchel / tripod) — counts the number of charges, no reload time.'
                 : '"Reload" is the time per shot for each gun (varies by weapon and crew).'}{' '}
               <strong className="text-cream/60">T3 wet</strong> = freshly poured concrete (takes 10×
-              damage during the 24h curing window);{' '}
-              <strong className="text-cream/60">T3 dry</strong> = fully cured.
+              damage while curing);{' '}
+              <strong className="text-cream/60">T3 dry</strong> = fully cured. Concrete cures in{' '}
+              <strong className="text-cream/60">18h</strong> — except the Underground Fortress and
+              the Storm Cannon, which take 48h.
             </p>
           </div>
         </section>

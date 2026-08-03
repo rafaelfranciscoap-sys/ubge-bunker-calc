@@ -8,8 +8,8 @@
 // onde:
 //   - profile[tier]     = fração de dano que "passa" naquele tier de estrutura (= 1 − resistência).
 //   - multiplier[tier]  = ajuste extra por tier (default 1).
-//   - drying (só col. T3)= concreto molhado toma MAIS dano: recém-colocado ×10; seca linearmente
-//                          (86400/tempo_s) até ×1 às 24h. "T3 wet" usa ×10; "T3 dry" usa ×1.
+//   - drying (só col. T3)= concreto molhado toma MAIS dano: recém-colocado ×10; seca
+//                          (64800/tempo_s) até ×1 às 18h. "T3 wet" usa ×10; "T3 dry" usa ×1.
 //
 // VALIDAÇÃO (maxHealth = 13.791 do print): 150mm T1 = ceil(13791/(900×0.75)) = 21 ✓;
 //   T3 dry = ceil(13791/(900×0.25)) = 62 ✓; T3 wet = ceil(13791/(900×0.25×10)) = 7 ✓.
@@ -145,9 +145,27 @@ export function weaponBreach(weapon: Weapon): DamageTypeBreach {
 }
 
 // Multiplicador de secagem do concreto (T3): molhado (recém-construído) toma 10× dano.
+// fonte: foxholeplanner (gui.js). NÃO confirmado no datamine — ver aviso abaixo.
 export const WET_CONCRETE_DRYING_MULTIPLIER = 10
-// Tempo total de cura (segundos) — a partir daí o concreto está "dry" (×1). fonte: gui.js/wiki.
-export const CONCRETE_FULL_CURE_SECONDS = 86400
+
+// Tempo total de cura (segundos) — a partir daí o concreto está "dry" (×1).
+// fonte: datamine Update 65, Structures (Bunkers) → "Concrete Settle Duration Mins" = 1080 min
+// para TODAS as 20 peças T3 padrão (Bunker, Bunker Base, Corner, Ramp, Hearth, garrisons de
+// Rifle/MG/AT/Artillery, Storage/Engine/Medical/Fire Suppression/Artillery Shelter, Observation,
+// Large Structure Foundation e as trincheiras T3). 1080 min = 18h.
+export const CONCRETE_FULL_CURE_SECONDS = 64800
+
+// Exceção: só duas estruturas curam mais devagar — 2880 min = 48h.
+// fonte: mesma coluna do datamine (FortGarrisonStation e LRArtillery).
+export const CONCRETE_FULL_CURE_SECONDS_LARGE = 172800
+export const LARGE_STRUCTURE_LONG_CURE = ['Underground Fortress', 'Storm Cannon'] as const
+
+// AVISO DE PROCEDÊNCIA: o 18h acima vem do datamine, mas o ×10 e a curva de decaimento
+// (CONCRETE_FULL_CURE_SECONDS / tempo, saturando no ×10) vêm do foxholeplanner, que ainda
+// usa 86400s (24h) — ou seja, ele está desatualizado nessa janela. Mantivemos a FORMA da
+// curva e reescalamos a janela para o valor do datamine, mas nem o ×10 nem o formato do
+// decaimento estão confirmados contra a versão atual do jogo.
+// TODO: confirmar empiricamente o multiplicador e a curva de cura in-game.
 
 const EXPLOSIVE_PROFILE = { t1: 0.75, t2: 0.65, t3: 0.25 }
 const AP_PROFILE = { t1: 0.25, t2: 0.25, t3: 0.07 }

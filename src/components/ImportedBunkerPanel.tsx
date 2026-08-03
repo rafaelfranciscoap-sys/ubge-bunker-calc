@@ -279,8 +279,10 @@ export function ImportedBunkerPanel({ shelterCount = 0 }: { shelterCount?: numbe
             </div>
             <p className="mt-2 text-[11px] leading-relaxed text-cream/40">
               <strong className="text-cream/60">T3 wet</strong> = freshly poured concrete (takes 10×
-              damage during the curing window); <strong className="text-cream/60">T3 dry</strong> =
-              fully cured (24h). Formula and values confirmed against foxholeplanner (open source).
+              damage while curing); <strong className="text-cream/60">T3 dry</strong> = fully cured.
+              Curing takes <strong className="text-cream/60">18h</strong> (datamine Update 65) —
+              only the Underground Fortress and the Storm Cannon take 48h. Damage formula from
+              foxholeplanner (open source).
             </p>
           </>
         ) : (
