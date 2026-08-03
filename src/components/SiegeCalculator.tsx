@@ -155,7 +155,12 @@ function PhaseBar({
   )
 }
 
-export function SiegeCalculator() {
+export interface SiegeCalculatorProps {
+  /** Leva o usuário à aba que quantifica o custo em HP de acrescentar um shelter. */
+  onOpenHowItWorks?: () => void
+}
+
+export function SiegeCalculator({ onOpenHowItWorks }: SiegeCalculatorProps = {}) {
   const data = useImportedBunkerStore((state) => state.data)
 
   const [weaponKey, setWeaponKey] = useState(WEAPONS.find((w) => w.key === '150mm')!.key)
@@ -415,6 +420,30 @@ export function SiegeCalculator() {
                 Shelter Rooms <strong className="text-cream/65">next to the piece you will shell</strong>;
                 shelters elsewhere in the bunker give it nothing.
               </p>
+
+              {/* Sem isto o seletor e lido como "e se eu adicionasse shelters?", que ele NAO faz:
+                  uma sala de shelter troca a integridade daquela peca de 0.97 para 0.82 e derruba
+                  o HP total, e o HP aqui veio do import, ja fechado. O seletor descreve o bunker
+                  que existe; simular acrescentar salas e trabalho da aba How it works. */}
+              {shelterCount > 0 && (
+                <p className="rounded-md border border-cream/12 bg-ink/50 px-2.5 py-1.5 text-[11px] leading-relaxed text-cream/55">
+                  This describes the bunker you imported — its HP already accounts for whatever
+                  shelters it has. It does <strong className="text-cream/80">not</strong> simulate
+                  adding them: a shelter also drops that piece's structural integrity from 0.97 to
+                  0.82, which lowers total HP.{' '}
+                  {onOpenHowItWorks ? (
+                    <button
+                      type="button"
+                      onClick={onOpenHowItWorks}
+                      className="text-gold/80 underline decoration-gold/30 underline-offset-2 transition-colors hover:text-gold"
+                    >
+                      Weigh that trade in "How it works"
+                    </button>
+                  ) : (
+                    <span>See the "How it works" tab to weigh that trade.</span>
+                  )}
+                </p>
+              )}
 
               {shelterCount > 0 && (
                 <p className="text-[11px] leading-relaxed text-cream/45">

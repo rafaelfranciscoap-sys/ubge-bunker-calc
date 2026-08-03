@@ -69,7 +69,7 @@ function App() {
       </header>
 
       <main className="relative z-10 flex-1">
-        {tab === 'siege' && <SiegeCalculator />}
+        {tab === 'siege' && <SiegeCalculator onOpenHowItWorks={() => setTab('how')} />}
         {tab === 'import' && <ImportFromImage onImported={() => setTab('siege')} />}
         {tab === 'how' && <HowItWorks />}
       </main>
