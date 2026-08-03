@@ -177,3 +177,35 @@ export function WeaponIcon({ iconType, ...props }: { iconType: WeaponIconType } 
     default:        return <ShellIcon {...props} />
   }
 }
+
+// Brasão de engenharia da UBGE — marca autoral (não é o logo oficial do regimento;
+// é um símbolo desenhado aqui no mesmo espírito: pá + engrenagem = "OBRA").
+// A moldura hexagonal ecoa a malha de hexes do mapa do Foxhole e o padrão de fundo.
+// Formas cheias e poucos detalhes de propósito: precisa ler a 16px como favicon.
+export function UbgeMarkIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 32 32" width={28} height={28} fill="none" {...props}>
+      <path
+        d="M16 1.6 29 9.1v13.8L16 30.4 3 22.9V9.1z"
+        stroke="currentColor"
+        strokeWidth={2}
+        strokeLinejoin="round"
+      />
+      {/* dentes de engrenagem ao redor da pá */}
+      <g fill="currentColor" opacity={0.5}>
+        <rect x="14.9" y="5.6" width="2.2" height="2.4" />
+        <rect x="14.9" y="24" width="2.2" height="2.4" />
+        <rect x="7.2" y="10.4" width="2.4" height="2.2" />
+        <rect x="22.4" y="10.4" width="2.4" height="2.2" />
+        <rect x="7.2" y="19.4" width="2.4" height="2.2" />
+        <rect x="22.4" y="19.4" width="2.4" height="2.2" />
+      </g>
+      {/* pá */}
+      <g fill="currentColor">
+        <path d="M16 7.4a2.7 2.7 0 0 0-2.7 2.7h2a.7.7 0 0 1 1.4 0h2A2.7 2.7 0 0 0 16 7.4z" />
+        <rect x="14.9" y="10.1" width="2.2" height="7.8" />
+        <path d="M12.3 17.9h7.4v2.9a3.7 3.7 0 1 1-7.4 0z" />
+      </g>
+    </svg>
+  )
+}

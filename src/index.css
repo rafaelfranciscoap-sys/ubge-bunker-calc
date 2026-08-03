@@ -120,6 +120,37 @@ h3,
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 
+/* Malha hexagonal — referência ao Foxhole sem tocar em nenhum asset do jogo:
+   o mapa do jogo é dividido em hexes e "hex" é vocabulário corrente dos jogadores.
+   Geometria autoral, desenhada aqui; nada importado. */
+@utility hex-field {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.055;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='100'%3E%3Cg fill='none' stroke='%237C8B5A' stroke-width='1.5'%3E%3Cpath d='M28 66 0 50 0 16 28 0 56 16 56 50 28 66 28 100'/%3E%3Cpath d='M28 0v34L0 50v34l28 16 28-16V50L28 34'/%3E%3C/g%3E%3C/svg%3E");
+  background-size: 56px 100px;
+}
+
+/* Brilho verde-oliva no topo: a cor de facção dos Coloniais puxando o olhar
+   para o cabeçalho, sem competir com o conteúdo. */
+@utility colonial-glow {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(
+      70rem 32rem at 15% -8%,
+      color-mix(in srgb, var(--color-olive) 22%, transparent),
+      transparent 70%
+    ),
+    radial-gradient(
+      55rem 28rem at 92% 4%,
+      color-mix(in srgb, var(--color-gold) 10%, transparent),
+      transparent 70%
+    );
+}
+
 /* Rótulo de campo: caixa alta, condensada, espaçada — a "etiqueta de formulário
    militar" que se repete em todos os painéis. */
 @utility field-label {
