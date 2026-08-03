@@ -50,9 +50,19 @@ export interface ArtyShelterBonusStep {
   cumulativeBonus: number
 }
 
-// fonte: especificação da Fase 1 (documento de origem não informado — TODO: confirmar referência exata na wiki)
-// Bônus só se aplica a peças adjacentes ao shelter; propaga por cantos mas não atravessa quadrados
-// (regra de topologia — a lógica de propagação pertence à camada /src/engine, não aos dados).
+// ATENÇÃO — CAMINHO MORTO E SEM FONTE PRIMÁRIA.
+// Estes passos (e a regra de propagação em engine/siegeCalculator.ts que os consome) vieram da
+// "especificação da Fase 1", cujo documento de origem nunca foi registrado. Varredura completa
+// do datamine Update 65 (36 abas, cabeçalhos e valores) encontrou só TRÊS campos de shelter:
+// Base Shelter Bonus (0.15), bAffectedByShelterBonus e nada mais — não existe campo de raio,
+// alcance, propagação ou empilhamento em lugar nenhum. Ou seja: o acúmulo (+5pp / +2pp) e a
+// topologia ("propaga por cantos, para em quadrados") NÃO têm respaldo em fonte primária.
+//
+// Nada disto está ligado ao calculador que está no ar: calculateSiege e
+// computeEffectiveShelterCountForPiece só são referenciados pelos próprios testes. O caminho
+// vivo é data/weapons.ts (SHELTER_BONUS_BY_COUNT + SHELTER_CONFIRMED_UP_TO), que sinaliza na UI
+// o que é estimado. Mantido aqui à espera da decisão sobre religar ou remover o Construtor.
+// TODO: decidir — religar com fonte confirmada, ou remover junto com o Construtor.
 export const ARTY_SHELTER_BONUS_STEPS: ArtyShelterBonusStep[] = [
   { shelterCount: 1, incrementalBonus: 0.15, cumulativeBonus: 0.15 },
   { shelterCount: 2, incrementalBonus: 0.05, cumulativeBonus: 0.20 },

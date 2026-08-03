@@ -4,6 +4,7 @@ import {
   BUNKER_COLUMNS,
   SHELTER_AFFECTED_TYPES,
   SHELTER_BONUS_BY_COUNT,
+  SHELTER_CONFIRMED_UP_TO,
   WEAPONS,
   type BunkerColumnKey,
 } from '../data/weapons'
@@ -364,34 +365,67 @@ export function SiegeCalculator() {
               )}
             </div>
 
-            {/* Artillery Shelter Rooms — termo do jogo, mantido */}
+            {/* Artillery Shelter Rooms — o bônus é POR PEÇA ATINGIDA, não do bunker inteiro
+                (datamine: "improves the resistance of ADJACENT bunkers"), e não vem no import,
+                que só traz HP/integridade/breach. Por isso o rótulo fala do alvo e o texto
+                deixa claro que é entrada manual. */}
             <div className="flex flex-col gap-1.5">
-              <span className="field-label">Artillery Shelter Rooms</span>
+              <span className="field-label">Shelters adjacent to your target</span>
               <div className="grid grid-cols-4 gap-1.5">
-                {([0, 1, 2, 3] as const).map((n) => (
-                  <button
-                    key={n}
-                    type="button"
-                    onClick={() => setShelterCount(n)}
-                    aria-pressed={shelterCount === n}
-                    className={`flex flex-col items-center gap-1.5 rounded-md border py-2 font-display text-xs font-medium tracking-wide transition-colors ${
-                      shelterCount === n
-                        ? 'border-good/60 bg-good/18 text-good'
-                        : 'border-cream/20 text-cream/60 hover:border-cream/40 hover:text-cream/85'
-                    }`}
-                  >
-                    <ShelterRoomsGlyph filled={n} />
-                    {n === 0 ? 'None' : `${n}×`}
-                  </button>
-                ))}
+                {([0, 1, 2, 3] as const).map((n) => {
+                  const estimated = n > SHELTER_CONFIRMED_UP_TO
+                  return (
+                    <button
+                      key={n}
+                      type="button"
+                      onClick={() => setShelterCount(n)}
+                      aria-pressed={shelterCount === n}
+                      title={
+                        estimated
+                          ? `${n} shelters: stacking not present in the datamine — estimated value`
+                          : undefined
+                      }
+                      className={`relative flex flex-col items-center gap-1.5 rounded-md border py-2 font-display text-xs font-medium tracking-wide transition-colors ${
+                        shelterCount === n
+                          ? 'border-good/60 bg-good/18 text-good'
+                          : 'border-cream/20 text-cream/60 hover:border-cream/40 hover:text-cream/85'
+                      }`}
+                    >
+                      <ShelterRoomsGlyph filled={n} />
+                      <span className="flex items-center gap-0.5">
+                        {n === 0 ? 'None' : `${n}×`}
+                        {estimated && (
+                          <span className="text-[9px] leading-none text-warn/70" aria-hidden="true">
+                            ?
+                          </span>
+                        )}
+                      </span>
+                    </button>
+                  )
+                })}
               </div>
+
+              <p className="text-[11px] leading-relaxed text-cream/45">
+                Manual input — the imported stats carry no shelter data. Count only the Artillery
+                Shelter Rooms <strong className="text-cream/65">next to the piece you will shell</strong>;
+                shelters elsewhere in the bunker give it nothing.
+              </p>
+
               {shelterCount > 0 && (
-                <p className="text-[11px] text-cream/45">
+                <p className="text-[11px] leading-relaxed text-cream/45">
                   {shelterActive
                     ? `${COLUMN_LABEL[column]}: ${Math.round(baseProfile * 100)}% → ${Math.round(adjustedProfile * 100)}% damage passes · −${Math.round(SHELTER_BONUS_BY_COUNT[Math.min(shelterCount, SHELTER_BONUS_BY_COUNT.length - 1)] * 100)}pp vs High Explosive`
                     : shelterBypassed
                       ? '300mm bypasses the shelter bonus'
                       : `Does not affect ${weapon.damageTypeName} damage`}
+                </p>
+              )}
+
+              {shelterCount > SHELTER_CONFIRMED_UP_TO && shelterActive && (
+                <p className="rounded-md border border-warn/25 bg-warn/8 px-2.5 py-1.5 text-[11px] leading-relaxed text-warn/90">
+                  <strong>Estimated.</strong> The datamine only defines the first shelter
+                  (+15pp). How the bonus stacks past that is not in any datamine field — treat{' '}
+                  {shelterCount}× as an educated guess, not a confirmed number.
                 </p>
               )}
             </div>

@@ -22,13 +22,40 @@
 // {0.25,0.25,0.07}; Demolition ignora estruturas (passa 1). Validado célula a célula contra o
 // painel do usuário (13.791 hp): 150mm T2=24, Mortar T2=71, 30mm T2=54, 68mm T3 dry=329. Nada estimado.
 
-// Shelter bonus — Artillery Shelter Room (foxhole.wiki.gg/wiki/Artillery_Shelter_Room).
-// Reduz dano de High Explosive e Incendiary recebido pela rede. Retornos decrescentes por shelter.
-// EXCEÇÃO: 300mm shells são imunes ao shelter bonus (bypassesShelter: true no weapon).
-// fonte: wiki + datamine Update 65 (bAffectedByShelterBonus).
+// ── Artillery Shelter Room ────────────────────────────────────────────────────
+//
+// O QUE O DATAMINE (Update 65) DIZ, textualmente:
+//   Structures (Bunkers) → FortArtilleryShelterT1/T2/T3:
+//     "Base Shelter Bonus" = 0.15 (idêntico nos três tiers)
+//     Structural Integrity = 0.82 (contra 0.97 de uma peça de bunker comum)
+//     Max Health = igual à peça comum do tier (750 / 2000 / 3750)
+//     Descrição: "A sheltered bunker that improves the resistance against artillery
+//                 of ADJACENT bunkers at the cost of structural integrity."
+//   Damage Types → bAffectedByShelterBonus = true só em HighExplosive e
+//     IncendiaryHighExplosive. O 300mm escapa porque usa
+//     BPHighExplosiveBreachingLeakDamageType, que NÃO tem a flag (bypassesShelter).
+//
+// O QUE O DATAMINE **NÃO** DIZ (varredura de todas as 36 abas, cabeçalhos e valores —
+// existem exatamente 3 campos de shelter no arquivo inteiro):
+//   1. Como o bônus ACUMULA com 2 ou 3 shelters. Só existe o 0.15 base.
+//   2. O que "adjacent" significa em topologia — não há campo de raio, alcance
+//      ou propagação em lugar nenhum.
+//   3. Se existe teto.
+//
+// Portanto: dos valores abaixo, só o índice 1 (0.15) tem lastro em fonte primária.
+// Os índices 2 e 3 vêm da mesma "especificação da Fase 1" sem origem registrada que
+// alimenta src/data/damage.ts (lá marcada com TODO). Um comentário anterior aqui dizia
+// "cap real = 23pp" enquanto os valores somam 22pp — os dois nunca bateram, e nenhum
+// dos dois tem fonte. Mantidos como estão para não mudar número de jogo sem fonte, mas
+// expostos como NÃO CONFIRMADOS via SHELTER_CONFIRMED_UP_TO para a UI poder sinalizar.
+// TODO: confirmar 2º/3º shelter empiricamente in-game ou em fonte primária.
 export const SHELTER_AFFECTED_TYPES = new Set(['High Explosive', 'Incendiary'])
-// Bônus acumulado por número de Artillery Shelter Rooms (índice = quantidade, cap real = 23pp).
+
+/** Bônus acumulado em pontos percentuais, índice = nº de shelters adjacentes ao ALVO. */
 export const SHELTER_BONUS_BY_COUNT = [0, 0.15, 0.20, 0.22] as const
+
+/** Até qual contagem o valor tem lastro no datamine. Acima disso a UI marca como estimado. */
+export const SHELTER_CONFIRMED_UP_TO = 1
 
 export type BunkerColumnKey = 't1' | 't2' | 't3_wet' | 't3_dry'
 

@@ -213,7 +213,7 @@ export function ImportedBunkerPanel({ shelterCount = 0 }: { shelterCount?: numbe
 
       <Section
         title="Bunker Destruction"
-        suffix={shelterCount > 0 ? `(${shelterCount}× Artillery Shelter)` : '(shots to destroy)'}
+        suffix={shelterCount > 0 ? `(${shelterCount}× shelter on target)` : '(shots to destroy)'}
         icon={<TargetCrosshairIcon />}
       >
         {destructionRows ? (
