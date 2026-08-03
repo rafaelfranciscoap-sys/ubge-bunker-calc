@@ -90,6 +90,11 @@ export function HowItWorks() {
     [pieces, tier, connectionRatio],
   )
 
+  // Bônus antes dos limites, para avisar quando o teto agiu — senão o usuário vê o número da
+  // barra de conexões não bater com o da fórmula e acha que é bug.
+  const rawBonus = connectionRatio * COMPACT_BONUS_MAX
+  const bonusWasCapped = pieces.length > 1 && result.bonus < rawBonus - 1e-9
+
   const shelterCount = pieces.filter((p) => p.isShelter).length
   // Mesmo bunker trocando cada shelter por uma peça comum — quantifica o custo da troca.
   const withoutShelters = useMemo(
@@ -285,6 +290,16 @@ export function HowItWorks() {
                   </div>
                 ))}
               </div>
+
+              {bonusWasCapped && (
+                <p className="rounded border border-warn/25 bg-warn/8 px-2.5 py-2 text-[11px] leading-relaxed text-warn/90">
+                  <strong>The bonus hit its ceiling.</strong> Your connections would give{' '}
+                  {pct(rawBonus)}, but the compact bonus can never exceed the integrity product
+                  itself — so it is capped at {pct(result.bonus)}. Past roughly 70 pieces, packing
+                  them tighter stops helping: the multiplicative decay has already outrun what
+                  compactness can give back.
+                </p>
+              )}
 
               {shelterCount > 0 && (
                 <p className="rounded border border-good/25 bg-good/8 px-2.5 py-2 text-[11px] leading-relaxed text-good/90">

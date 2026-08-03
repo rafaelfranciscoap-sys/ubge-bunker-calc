@@ -56,6 +56,45 @@ describe('integrityProduct — decaimento exponencial', () => {
   })
 })
 
+// Os três limites do bônus, confirmados no fonte do foxbunker (data/foxbunkerReference.ts) e
+// corroborados pela planilha BunkerTheory da comunidade colonial. Os HP esperados abaixo são
+// exatamente os que a planilha calcula nas abas tier1Sq/tier3Sq.
+describe('bunkerHealth — limites do bônus de compactação', () => {
+  it('peça única vale 100% de integridade (o modificador só age a partir de 2)', () => {
+    const r = bunkerHealth([3750], [0.97], 0, 1)
+    expect(r.totalMultiplier).toBe(1)
+    expect(r.finalHp).toBe(3750)
+  })
+
+  it('o bônus não passa do produto: 9×9 T3 dá 51.530, não 62.214', () => {
+    // 81 peças, 144 conexões de 180 lados contados. produto = 0.97^81 = 8.48%,
+    // bônus bruto = 12% > produto → travado no produto → total = 2 × 8.48% = 16.96%.
+    const r = bunkerHealth(repeat(3750, 81), repeat(0.97, 81), 144, 180)
+    expect(r.integrity).toBeCloseTo(0.0848223842, 9)
+    expect(r.bonus).toBeCloseTo(0.0848223842, 9) // travado no produto, não os 0.12 brutos
+    expect(r.finalHp).toBe(51530)
+  })
+
+  it('10×10 T3 dá 35.664 — a soma ingênua daria 63.855 (quase o dobro)', () => {
+    const r = bunkerHealth(repeat(3750, 100), repeat(0.97, 100), 180, 220)
+    expect(r.finalHp).toBe(35664)
+    const somaIngenua = Math.round(375000 * (Math.pow(0.97, 100) + (180 / 220) * 0.15))
+    expect(somaIngenua).toBe(63855)
+  })
+
+  it('10×10 T1 bate com a planilha (7.133)', () => {
+    const r = bunkerHealth(repeat(750, 100), repeat(0.97, 100), 180, 220)
+    expect(r.finalHp).toBe(7133)
+  })
+
+  it('abaixo do ponto de corte nada trava: 8×8 T3 segue na soma normal', () => {
+    // produto = 0.97^64 = 14.24% > bônus bruto 11.67% → sem trava.
+    const r = bunkerHealth(repeat(3750, 64), repeat(0.97, 64), 112, 144)
+    expect(r.bonus).toBeCloseTo(0.1166666667, 9)
+    expect(r.finalHp).toBe(62167)
+  })
+})
+
 describe('compactBonus — resgate linear e limitado', () => {
   it('zero conexões não dá bônus', () => {
     expect(compactBonus(0, 24)).toBe(0)
