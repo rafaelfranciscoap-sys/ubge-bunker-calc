@@ -15,6 +15,9 @@ import {
 } from '../engine/bunkerDestruction'
 import { useImportedBunkerStore } from '../store/useImportedBunkerStore'
 import { ImportedBunkerPanel } from './ImportedBunkerPanel'
+import { SavedBunkers } from './SavedBunkers'
+import { WeaponComparison } from './WeaponComparison'
+import { WeaponIcon } from './icons'
 
 // Rótulos das colunas — T1/T2/T3 e wet/dry são termos do jogo, mantidos em inglês.
 const COLUMN_LABEL: Record<BunkerColumnKey, string> = {
@@ -22,6 +25,16 @@ const COLUMN_LABEL: Record<BunkerColumnKey, string> = {
   t2: 'T2',
   t3_wet: 'T3 wet',
   t3_dry: 'T3 dry',
+}
+
+// Cor por tipo de dano — dá para reconhecer a natureza da arma antes de ler o texto,
+// e é a mesma leitura em todo o app (badge, ícone, tabela).
+const DAMAGE_TYPE_STYLE: Record<string, string> = {
+  'High Explosive': 'border-gold/40 bg-gold/12 text-gold',
+  Explosive: 'border-gold/30 bg-gold/8 text-gold/85',
+  Incendiary: 'border-danger/40 bg-danger/12 text-danger',
+  Demolition: 'border-good/45 bg-good/12 text-good',
+  'Armour Piercing': 'border-cream/25 bg-cream/8 text-cream/65',
 }
 
 function defaultColumnForTier(tier: 'T1' | 'T2' | 'T3' | null): BunkerColumnKey {
@@ -134,6 +147,14 @@ export function SiegeCalculator() {
     setDetectedColumn(col)
   }, [data])
 
+  // Preenche a recarga com o ciclo real da plataforma ao trocar de arma (datamine, Mount Points).
+  // O valor continua editável — quem tiver crew melhor ou outra plataforma sobrescreve por cima.
+  // Armas sem plataforma clara no datamine (infantaria/carga colocada) mantêm o valor atual.
+  useEffect(() => {
+    const next = WEAPONS.find((w) => w.key === weaponKey)?.cycleSeconds
+    if (next) setReloadSeconds(next)
+  }, [weaponKey])
+
   const weapon = WEAPONS.find((w) => w.key === weaponKey)!
   const inferredTier = data
     ? inferTierFromImport(data.hpTotal, data.size, data.integrityPercent)
@@ -149,13 +170,15 @@ export function SiegeCalculator() {
   const baseProfile = currentColDef ? weapon.profiles[currentColDef.profileTier] : 0
   const adjustedProfile = Math.max(0, baseProfile - shelterBonusPP)
 
+  // data.breachHpAbsolute = HP que RESTA quando a brecha se expõe (foxbunker: "breach after Xhp"
+  // já convertido para o complemento). A fase 1 precisa da quantidade a REMOVER até lá.
+  // Hasteado do useMemo porque o comparador de armas também precisa deste valor.
+  const phase1Hp =
+    data && data.hpTotal !== null ? Math.max(0, data.hpTotal - (data.breachHpAbsolute ?? 0)) : 0
+
   const result = useMemo(() => {
     if (!data || data.hpTotal === null) return null
     const perHit = effectiveDamagePerHit(weapon, column, shelterBonusPP)
-    // data.breachHpAbsolute = HP que RESTA quando a brecha se expõe (foxbunker: "breach after Xhp"
-    // já convertido para o complemento). A fase 1 precisa da quantidade a REMOVER até lá.
-    const breachableHealth = data.breachHpAbsolute ?? 0
-    const phase1Hp = Math.max(0, data.hpTotal - breachableHealth)
     const outcome = breachOutcome(data.hpTotal, phase1Hp, weapon, column, shelterBonusPP)
     const shotsPerSecond = guns > 0 && reloadSeconds > 0 ? guns / reloadSeconds : 0
     const timeOpenBreach =
@@ -167,7 +190,7 @@ export function SiegeCalculator() {
         ? outcome.hitsToDestroy / shotsPerSecond
         : null
     return { perHit, outcome, timeOpenBreach, timeDestroy }
-  }, [data, weapon, column, guns, reloadSeconds, shelterBonusPP])
+  }, [data, weapon, column, guns, reloadSeconds, shelterBonusPP, phase1Hp])
 
   if (!data) {
     return (
@@ -193,6 +216,8 @@ export function SiegeCalculator() {
           Bunker imported from foxbunker — modifiers already baked into the numbers.
         </p>
       </header>
+
+      <SavedBunkers current={data} />
 
       <div className="flex flex-col gap-5 lg:flex-row lg:items-start">
         {/* Painel esquerdo — planejamento */}
@@ -244,6 +269,36 @@ export function SiegeCalculator() {
                 ))}
               </select>
             </label>
+
+            {/* Ficha da arma: dá cara à seleção, que antes era só uma linha de texto no select. */}
+            <div className="flex items-center gap-3 rounded-md border border-cream/10 bg-ink/60 px-3 py-2.5">
+              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md border border-gold/25 bg-gold/8">
+                <WeaponIcon iconType={weapon.iconType} width={26} height={26} className="text-gold" />
+              </span>
+              <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                <span className="font-display text-base font-semibold leading-none text-cream">
+                  {weapon.label}
+                </span>
+                <span className="truncate text-[11px] text-cream/45">
+                  {weapon.placed
+                    ? 'Placed charge'
+                    : (weapon.platform ?? 'Infantry weapon — no datamine platform')}
+                </span>
+              </span>
+              <span
+                className={`shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-medium ${
+                  DAMAGE_TYPE_STYLE[weapon.damageTypeName] ?? 'border-cream/25 text-cream/60'
+                }`}
+              >
+                {weapon.damageTypeName}
+              </span>
+              <span className="flex shrink-0 flex-col items-end">
+                <span className="font-display text-lg font-bold leading-none text-cream">
+                  {formatNumber(weapon.damage)}
+                </span>
+                <span className="text-[10px] text-cream/45">base dmg</span>
+              </span>
+            </div>
 
             <div className="flex flex-col gap-1.5">
               <span className="field-label">Bunker State</span>
@@ -319,7 +374,14 @@ export function SiegeCalculator() {
                 />
               </label>
               <label className="flex flex-col gap-1.5">
-                <span className="field-label">Reload (s)</span>
+                <span className="field-label flex items-center gap-1.5">
+                  Reload (s)
+                  {weapon.cycleSeconds === reloadSeconds && weapon.platform && (
+                    <span className="rounded-sm bg-good/15 px-1 text-[9px] normal-case tracking-normal text-good/80">
+                      auto
+                    </span>
+                  )}
+                </span>
                 <input
                   type="number"
                   min={0.1}
@@ -330,6 +392,14 @@ export function SiegeCalculator() {
                 />
               </label>
             </div>
+
+            {weapon.platform && !weapon.placed && (
+              <p className="-mt-2 text-[11px] leading-relaxed text-cream/40">
+                Full fire cycle of the{' '}
+                <strong className="text-cream/60">{weapon.platform}</strong> from the datamine
+                (firing delay + reload). Override it if your crew or platform differs.
+              </p>
+            )}
 
             {result && (
               <div className="flex flex-col gap-3 border-t border-cream/10 pt-4">
@@ -404,6 +474,18 @@ export function SiegeCalculator() {
                   </p>
                 )}
               </div>
+            )}
+
+            {data.hpTotal !== null && (
+              <WeaponComparison
+                maxHealth={data.hpTotal}
+                phase1Hp={phase1Hp}
+                column={column}
+                shelterCount={shelterCount}
+                guns={guns}
+                selectedWeaponKey={weaponKey}
+                onSelectWeapon={setWeaponKey}
+              />
             )}
 
             <p className="text-[11px] leading-relaxed text-cream/40">

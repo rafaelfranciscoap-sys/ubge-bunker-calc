@@ -68,6 +68,21 @@ export interface Weapon {
    * usa BPHighExplosiveBreachingLeakDamageType (ignora limiar), não BPHighExplosiveDamageType.
    */
   ignoresBreachThreshold?: boolean
+  /**
+   * Ciclo de tiro base em segundos da plataforma de cerco canônica desta munição.
+   * fonte: datamine Update 65, aba "Mount Points" — "Firing Duration (Delay between refire)"
+   * + "Reload Duration" do mount correspondente.
+   *
+   * ATENÇÃO: recarga é propriedade da PLATAFORMA, não da munição — o mesmo 150mm tem ciclo
+   * diferente numa emplacement e num tanque. Aqui fica a plataforma emplaçada/de campo
+   * (a relevante em cerco), com preferência pela variante Colonial quando existem as duas.
+   * `platform` diz de qual mount o número veio, para o usuário poder conferir e ajustar.
+   * Ausente = o datamine não dá uma plataforma clara (infantaria/carga colocada) — nesses
+   * casos a UI mantém o valor manual, sem inventar número.
+   */
+  cycleSeconds?: number
+  /** Plataforma de onde veio o cycleSeconds (rótulo legível para a UI). */
+  platform?: string
 }
 
 // Comportamento de brecha por TIPO de dano (display name).
@@ -118,35 +133,36 @@ export const WEAPONS: Weapon[] = [
   { key: 'hegrenade', label: 'HE Grenade', iconType: 'grenade', damageTypeName: 'Explosive', damage: 240, profiles: EXPLOSIVE_PROFILE, multipliers: { t2: 0.95, t3: 0.95 } },
   { key: 'helauncher', label: 'HE Launcher', iconType: 'grenade', damageTypeName: 'Explosive', damage: 400, profiles: EXPLOSIVE_PROFILE, multipliers: { t2: 0.95, t3: 0.95 } },
   // ── Munição de veículo / canhão ──────────────────────────────────────────────
-  { key: '30mm', label: '30mm', iconType: 'round', damageTypeName: 'Explosive', damage: 400, profiles: EXPLOSIVE_PROFILE, multipliers: { t2: 0.99, t3: 0.99 } },
+  { key: '30mm', label: '30mm', iconType: 'round', damageTypeName: 'Explosive', damage: 400, profiles: EXPLOSIVE_PROFILE, multipliers: { t2: 0.99, t3: 0.99 }, cycleSeconds: 4, platform: 'Deployed ISG' },
   { key: 'rpg', label: 'RPG', iconType: 'round', damageTypeName: 'Explosive', damage: 550, profiles: EXPLOSIVE_PROFILE, multipliers: { t3: 0.99 } },
-  { key: '40mm', label: '40mm', iconType: 'round', damageTypeName: 'Explosive', damage: 600, profiles: EXPLOSIVE_PROFILE },
-  { key: '75mm', label: '75mm', iconType: 'round', damageTypeName: 'Explosive', damage: 1750, profiles: EXPLOSIVE_PROFILE },
+  { key: '40mm', label: '40mm', iconType: 'round', damageTypeName: 'Explosive', damage: 600, profiles: EXPLOSIVE_PROFILE, cycleSeconds: 4, platform: 'Field Cannon' },
+  { key: '75mm', label: '75mm', iconType: 'round', damageTypeName: 'Explosive', damage: 1750, profiles: EXPLOSIVE_PROFILE, cycleSeconds: 3, platform: 'Emplaced Large Cannon' },
   // ── Armour Piercing ──────────────────────────────────────────────────────────
-  { key: '68mm', label: '68mm', iconType: 'ap', damageTypeName: 'Armour Piercing', damage: 600, profiles: AP_PROFILE },
-  { key: '94.5mm', label: '94.5mm', iconType: 'ap', damageTypeName: 'Armour Piercing', damage: 1750, profiles: AP_PROFILE },
+  { key: '68mm', label: '68mm', iconType: 'ap', damageTypeName: 'Armour Piercing', damage: 600, profiles: AP_PROFILE, cycleSeconds: 4, platform: 'Field AT Gun' },
+  { key: '94.5mm', label: '94.5mm', iconType: 'ap', damageTypeName: 'Armour Piercing', damage: 1750, profiles: AP_PROFILE, cycleSeconds: 4, platform: 'Large Field AT Gun' },
   // ── Artilharia (HE) ──────────────────────────────────────────────────────────
+  // Mortar (Cremari) é infantaria — o datamine não dá um ciclo de mount, então fica sem preset.
   { key: 'mortar', label: 'Mortar', iconType: 'arty', damageTypeName: 'High Explosive', damage: 300, profiles: EXPLOSIVE_PROFILE },
-  { key: '120mm', label: '120mm', iconType: 'arty', damageTypeName: 'High Explosive', damage: 400, profiles: EXPLOSIVE_PROFILE },
-  { key: '150mm', label: '150mm', iconType: 'arty', damageTypeName: 'High Explosive', damage: 900, profiles: EXPLOSIVE_PROFILE },
+  { key: '120mm', label: '120mm', iconType: 'arty', damageTypeName: 'High Explosive', damage: 400, profiles: EXPLOSIVE_PROFILE, cycleSeconds: 3.5, platform: 'Field Artillery' },
+  { key: '150mm', label: '150mm', iconType: 'arty', damageTypeName: 'High Explosive', damage: 900, profiles: EXPLOSIVE_PROFILE, cycleSeconds: 5.5, platform: 'Emplaced Heavy Artillery' },
   // Rocket (3C-High Explosive Rocket) — BPHighExplosiveFalloffDamageType, afetado por shelter.
-  { key: 'rocket', label: 'Rocket', iconType: 'rocket', damageTypeName: 'High Explosive', damage: 700, profiles: EXPLOSIVE_PROFILE },
+  { key: 'rocket', label: 'Rocket', iconType: 'rocket', damageTypeName: 'High Explosive', damage: 700, profiles: EXPLOSIVE_PROFILE, cycleSeconds: 3.9, platform: 'Emplaced Rocket Launcher' },
   // Fire Rocket (4C-Fire Rocket) — BPIncendiaryHighExplosiveDamageType. Perfil idêntico ao HE
   // (Tier1/2/3Structure mig = 0.25/0.35/0.75), afetado por shelter, NÃO brecha bunkers.
-  { key: 'firerocket', label: 'Fire Rocket', iconType: 'rocket', damageTypeName: 'Incendiary', damage: 145, profiles: EXPLOSIVE_PROFILE },
+  { key: 'firerocket', label: 'Fire Rocket', iconType: 'rocket', damageTypeName: 'Incendiary', damage: 145, profiles: EXPLOSIVE_PROFILE, cycleSeconds: 5.4, platform: 'Field Rocket Launcher' },
   // Shatter Missile — BPDemolitionBreachingFalloffDamageType: ignora limiar de brecha.
-  { key: 'shattermissile', label: 'Shatter Missile', iconType: 'rocket', damageTypeName: 'Demolition', damage: 250, profiles: DEMOLITION_PROFILE, ignoresBreachThreshold: true },
+  { key: 'shattermissile', label: 'Shatter Missile', iconType: 'rocket', damageTypeName: 'Demolition', damage: 250, profiles: DEMOLITION_PROFILE, ignoresBreachThreshold: true, cycleSeconds: 5.4, platform: 'Gunboat' },
   // Hydra's usa BPDemolitionDamageType: NÃO ignora limiar de brecha.
   { key: 'hydras', label: "Hydra's", iconType: 'rocket', damageTypeName: 'Demolition', damage: 550, profiles: DEMOLITION_PROFILE, breachingModifier: 1.2 },
   // Raidbreaker (Mark II Raidbreaker) — BPHighExplosiveRuinDamageType, afetado por shelter.
   { key: 'raidbreaker', label: 'Raidbreaker', iconType: 'arty', damageTypeName: 'High Explosive', damage: 1200, profiles: EXPLOSIVE_PROFILE },
   // ── Artilharia de cerco ───────────────────────────────────────────────────────
   // 250mm "Fury" usa BPDemolitionBreachingDamageType: ignora limiar de brecha.
-  { key: '250mm-fury', label: '250mm (Fury)', iconType: 'satchel', damageTypeName: 'Demolition', damage: 800, profiles: DEMOLITION_PROFILE, ignoresBreachThreshold: true },
+  { key: '250mm-fury', label: '250mm (Fury)', iconType: 'satchel', damageTypeName: 'Demolition', damage: 800, profiles: DEMOLITION_PROFILE, ignoresBreachThreshold: true, cycleSeconds: 5.5, platform: 'Large Field Mortar' },
   // 250mm "Purity" usa BPDemolitionDamageType: NÃO ignora limiar (precisa de fase 1).
-  { key: '250mm-purity', label: '250mm (Purity)', iconType: 'satchel', damageTypeName: 'Demolition', damage: 800, profiles: DEMOLITION_PROFILE },
+  { key: '250mm-purity', label: '250mm (Purity)', iconType: 'satchel', damageTypeName: 'Demolition', damage: 800, profiles: DEMOLITION_PROFILE, cycleSeconds: 5.5, platform: 'Field Mortar' },
   // 300mm usa BPHighExplosiveBreachingLeakDamageType: ignora limiar E bypassa shelter.
-  { key: '300mm', label: '300mm', iconType: 'arty', damageTypeName: 'High Explosive', damage: 3000, profiles: EXPLOSIVE_PROFILE, bypassesShelter: true, ignoresBreachThreshold: true },
+  { key: '300mm', label: '300mm', iconType: 'arty', damageTypeName: 'High Explosive', damage: 3000, profiles: EXPLOSIVE_PROFILE, bypassesShelter: true, ignoresBreachThreshold: true, cycleSeconds: 4.5, platform: 'Storm Cannon' },
   // ── Cargas de demolição ───────────────────────────────────────────────────────
   // Alligator usa BPDemolitionDamageType: NÃO ignora limiar de brecha.
   { key: 'alligator', label: 'Alligator', iconType: 'satchel', damageTypeName: 'Demolition', damage: 550, profiles: DEMOLITION_PROFILE, breachingModifier: 3, placed: true },
