@@ -130,11 +130,19 @@ export function breachOutcome(
   }
 
   // Explosive/HE/DemolitionDamageType: dois estágios.
-  // Fase 1: remover phase1Hp de HP (= SI × maxHP) até o limiar de brecha.
-  // Fase 2: destruir o restante (maxHealth − phase1Hp = (1−SI) × maxHP) com breaching modifier.
+  // Fase 1: remover phase1Hp de HP (= SI × maxHP) até a rede atingir o limiar de brecha.
+  // Fase 2: destruir o que sobrou, agora com o breaching modifier.
   const phase1 = phase1Hp > 0 ? Math.ceil(phase1Hp / perHit) : 0
-  const hpInBreachPhase = Math.max(0, maxHealth - phase1Hp)
-  const phase2 = hpInBreachPhase > 0 ? Math.ceil(hpInBreachPhase / breachPerHit) : 0
+
+  // O tiro que cruza o limiar quase nunca para exatamente nele — o excedente é dano que JÁ foi
+  // dado e precisa entrar na fase 2. Descontar `phase1Hp` em vez do dano realmente entregue
+  // (`phase1 × perHit`) faz o total arredondar para cima duas vezes e inflar o resultado em 1.
+  // Ex.: 28.189 HP, limiar em 4.645, 120mm a 100/tiro → fase 1 = ceil(23.544/100) = 236 tiros,
+  // que entregam 23.600 (56 de excedente). Sobram 4.589, não 4.645: 46 tiros, não 47.
+  // Com breachingModifier = 1 isto faz o total fechar exatamente com ceil(maxHealth / perHit),
+  // que é o número da tabela de destruição — as duas telas passam a concordar sempre.
+  const hpAfterPhase1 = Math.max(0, maxHealth - phase1 * perHit)
+  const phase2 = hpAfterPhase1 > 0 ? Math.ceil(hpAfterPhase1 / breachPerHit) : 0
   return {
     canBreach: true,
     ignoresThreshold: false,

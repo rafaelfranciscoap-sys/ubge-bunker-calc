@@ -74,8 +74,45 @@ describe('breachOutcome — modelo de brecha real (datamine Update 65)', () => {
     expect(o.ignoresThreshold).toBe(false)
     // fase 1: 12058/225 = 53.6 → 54 acertos até abrir a brecha
     expect(o.hitsToOpenBreach).toBe(54)
-    // total: 54 + ceil(6882/225)=31 → 85
+    // 54 acertos entregam 12.150 (92 de excedente sobre o limiar); sobram 6.790, não 6.882
+    // → ceil(6790/225) = 31. Total 85, igual a ceil(18940/225).
     expect(o.hitsToDestroy).toBe(85)
+  })
+
+  // Regressão: o tiro que cruza o limiar quase sempre passa dele, e esse excedente é dano já
+  // dado. Descontar o limiar cheio em vez do dano entregue arredondava para cima duas vezes e
+  // inflava o total em 1 — o painel esquerdo dizia 283 onde a tabela de destruição dizia 282.
+  it('carrega o excedente da fase 1 para a fase 2 (sem arredondar duas vezes)', () => {
+    // Caso real reportado: 28.189 HP, 16.5% breach após 23.544 HP, 120mm a 100/tiro.
+    const hp = 28189
+    const phase1Hp = 23544 // = 28.189 − 4.645 de breachable
+    const o = breachOutcome(hp, phase1Hp, weapon('120mm'), 't3_dry')
+    expect(o.hitsToOpenBreach).toBe(236) // ceil(23544/100)
+    // 236 × 100 = 23.600 entregues → sobram 4.589 → ceil(4589/100) = 46, não 47
+    expect(o.hitsToDestroy).toBe(282)
+  })
+
+  // Invariante: quando o breaching modifier é 1, a fase 2 não bate mais forte que a fase 1,
+  // então o total TEM de ser idêntico ao da tabela de destruição. Se as duas telas divergirem
+  // de novo, este teste quebra.
+  it('com breachingModifier 1, o total bate exatamente com hitsToDestroy da tabela', () => {
+    const cases = [
+      { hp: 28189, phase1: 23544 },
+      { hp: 18940, phase1: 12058 },
+      { hp: 24221, phase1: 17383 },
+      { hp: 13791, phase1: 8000 },
+    ]
+    for (const w of ['150mm', '120mm', 'Mortar', '75mm'] as const) {
+      for (const col of ['t1', 't2', 't3_dry', 't3_wet'] as const) {
+        for (const { hp, phase1 } of cases) {
+          const weap = weapon(w)
+          expect(weap.breachingModifier ?? 1).toBe(1)
+          expect(breachOutcome(hp, phase1, weap, col).hitsToDestroy).toBe(
+            hitsToDestroy(hp, weap, col),
+          )
+        }
+      }
+    }
   })
 
   it('AP (68mm) NÃO brecha estruturas → destruição impossível (Infinity)', () => {
