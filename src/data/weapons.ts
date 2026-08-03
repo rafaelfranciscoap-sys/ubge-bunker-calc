@@ -81,7 +81,19 @@ export interface Weapon {
   /** Ajuste extra por tier (default 1 quando ausente) — fator por-arma do foxholeplanner
    * (falloff/mecânica de explosão), confirmado por bater com o painel do usuário. */
   multipliers?: Partial<Record<'t1' | 't2' | 't3', number>>
-  /** Breaching Modifier (datamine, aba Ammo) — multiplica o dano na fase de brecha. Default 1. */
+  /**
+   * Breaching Modifier — multiplica a CHANCE de brechar, NÃO o dano.
+   * fonte: wiki oficial (Trench & Bunker Construction System #Breach) + datamine Update 65.
+   * A chance normal vai de 0% a 25% conforme o HP cai abaixo do Breachable Health; este valor
+   * multiplica essa chance (0–25% × mod). Armas que ignoram o limiar usam 25% × mod fixo.
+   *
+   * ATENÇÃO: o campo existe em DUAS abas do datamine, e qual vale depende da arma:
+   *   - aba "Ammo" para carga colocada/lançada pelo próprio item (Hydra's 1.2, Havoc 3,
+   *     Alligator 3);
+   *   - aba "Mount Points" para o que é disparado de uma plataforma — aí o modificador é da
+   *     PLATAFORMA, não da munição (250mm Purity 3, 250mm Fury 2, Shatter Missile 0.7).
+   * Ler só a aba Ammo fazia esses três aparecerem como 1. Default 1.
+   */
   breachingModifier?: number
   /** true = munição colocada (satchel/tripé), não disparada por canhão — "recarga" não se aplica. */
   placed?: boolean
@@ -196,16 +208,22 @@ export const WEAPONS: Weapon[] = [
   // (Tier1/2/3Structure mig = 0.25/0.35/0.75), afetado por shelter, NÃO brecha bunkers.
   { key: 'firerocket', label: 'Fire Rocket', iconType: 'rocket', damageTypeName: 'Incendiary', damage: 145, profiles: EXPLOSIVE_PROFILE, cycleSeconds: 5.4, platform: 'Field Rocket Launcher' },
   // Shatter Missile — BPDemolitionBreachingFalloffDamageType: ignora limiar de brecha.
-  { key: 'shattermissile', label: 'Shatter Missile', iconType: 'rocket', damageTypeName: 'Demolition', damage: 250, profiles: DEMOLITION_PROFILE, ignoresBreachThreshold: true, cycleSeconds: 5.4, platform: 'Gunboat' },
+  // Modificador 0.7 vem do mount (Gunboat2C / ScoutTankMultiW), não da munição: é a única
+  // arma do jogo com chance de brecha REDUZIDA, compensada por poder brechar a qualquer HP.
+  { key: 'shattermissile', label: 'Shatter Missile', iconType: 'rocket', damageTypeName: 'Demolition', damage: 250, profiles: DEMOLITION_PROFILE, ignoresBreachThreshold: true, breachingModifier: 0.7, cycleSeconds: 5.4, platform: 'Gunboat' },
   // Hydra's usa BPDemolitionDamageType: NÃO ignora limiar de brecha.
   { key: 'hydras', label: "Hydra's", iconType: 'rocket', damageTypeName: 'Demolition', damage: 550, profiles: DEMOLITION_PROFILE, breachingModifier: 1.2 },
   // Raidbreaker (Mark II Raidbreaker) — BPHighExplosiveRuinDamageType, afetado por shelter.
   { key: 'raidbreaker', label: 'Raidbreaker', iconType: 'arty', damageTypeName: 'High Explosive', damage: 1200, profiles: EXPLOSIVE_PROFILE },
   // ── Artilharia de cerco ───────────────────────────────────────────────────────
   // 250mm "Fury" usa BPDemolitionBreachingDamageType: ignora limiar de brecha.
-  { key: '250mm-fury', label: '250mm (Fury)', iconType: 'satchel', damageTypeName: 'Demolition', damage: 800, profiles: DEMOLITION_PROFILE, ignoresBreachThreshold: true, cycleSeconds: 5.5, platform: 'Large Field Mortar' },
+  // Modificador 2 vem do mount (LargeFieldMortarC / Gunboat2W). A troca de design fica clara
+  // ao lado do Purity: Fury brecha a qualquer HP mas com chance menor; Purity precisa do
+  // limiar mas rola mais alto quando chega lá.
+  { key: '250mm-fury', label: '250mm (Fury)', iconType: 'satchel', damageTypeName: 'Demolition', damage: 800, profiles: DEMOLITION_PROFILE, ignoresBreachThreshold: true, breachingModifier: 2, cycleSeconds: 5.5, platform: 'Large Field Mortar' },
   // 250mm "Purity" usa BPDemolitionDamageType: NÃO ignora limiar (precisa de fase 1).
-  { key: '250mm-purity', label: '250mm (Purity)', iconType: 'satchel', damageTypeName: 'Demolition', damage: 800, profiles: DEMOLITION_PROFILE, cycleSeconds: 5.5, platform: 'Field Mortar' },
+  // Modificador 3 vem do mount (FieldMortarC/W, MortarTankC, MediumTankSiegeW).
+  { key: '250mm-purity', label: '250mm (Purity)', iconType: 'satchel', damageTypeName: 'Demolition', damage: 800, profiles: DEMOLITION_PROFILE, breachingModifier: 3, cycleSeconds: 5.5, platform: 'Field Mortar' },
   // 300mm usa BPHighExplosiveBreachingLeakDamageType: ignora limiar E bypassa shelter.
   { key: '300mm', label: '300mm', iconType: 'arty', damageTypeName: 'High Explosive', damage: 3000, profiles: EXPLOSIVE_PROFILE, bypassesShelter: true, ignoresBreachThreshold: true, cycleSeconds: 4.5, platform: 'Storm Cannon' },
   // ── Cargas de demolição ───────────────────────────────────────────────────────
