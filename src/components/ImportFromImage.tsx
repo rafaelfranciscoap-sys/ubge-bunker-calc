@@ -205,38 +205,17 @@ export function ImportFromImage({ onImported }: ImportFromImageProps) {
           <section className="overflow-hidden rounded-lg border border-gold/25 bg-surface shadow-lg shadow-black/40">
             <div className="border-b border-gold/15 bg-surface-raised px-4 py-2.5">
               <h2 className="font-display text-sm font-semibold uppercase tracking-[0.06em] text-gold">
-                Method
+                {method === 'text' ? 'Paste your build' : 'Advanced — image import'}
               </h2>
             </div>
             <div className="p-4">
-              <div className="flex gap-2">
-                {(
-                  [
-                    { key: 'text', label: 'Paste text' },
-                    { key: 'image', label: 'Image (AI)' },
-                  ] as const
-                ).map((option) => (
-                  <button
-                    key={option.key}
-                    type="button"
-                    onClick={() => {
-                      setMethod(option.key)
-                      resetResult()
-                    }}
-                    aria-pressed={method === option.key}
-                    className={`flex-1 rounded-md border px-3 py-2 font-display text-xs font-medium tracking-wide transition-colors ${
-                      method === option.key
-                        ? 'border-gold bg-gold text-bg-dark'
-                        : 'border-cream/25 text-cream/70 hover:border-gold/60 hover:text-cream'
-                    }`}
-                  >
-                    {option.label}
-                  </button>
-                ))}
-              </div>
-
+              {/* O caminho por imagem pede uma chave de API da Anthropic. Isso é legítimo
+                  (chave do próprio usuário, guardada só no navegador dele), mas um site pedindo
+                  chave de API de cara parece golpe para quem chega sem contexto — e o caminho por
+                  texto é melhor em tudo: offline, grátis e exato. Por isso ele não é oferecido
+                  como opção equivalente: fica atrás de um link discreto, com o contexto junto. */}
               {method === 'text' ? (
-                <div className="mt-4 flex flex-col gap-2">
+                <div className="flex flex-col gap-2">
                   <span className="field-label">Stats card text</span>
                   <p className="text-xs leading-relaxed text-cream/55">
                     On foxbunker.com, build or select your bunker, hit{' '}
@@ -258,9 +237,38 @@ export function ImportFromImage({ onImported }: ImportFromImageProps) {
                   >
                     Read text
                   </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMethod('image')
+                      resetResult()
+                    }}
+                    className="mt-1 self-start text-[11px] text-cream/40 underline decoration-cream/25 underline-offset-2 transition-colors hover:text-cream/70"
+                  >
+                    Only have a screenshot? Advanced image import →
+                  </button>
                 </div>
               ) : (
-                <div className="mt-4 flex flex-col gap-4">
+                <div className="flex flex-col gap-4">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMethod('text')
+                      resetResult()
+                    }}
+                    className="self-start text-xs text-gold/80 underline decoration-gold/30 underline-offset-2 transition-colors hover:text-gold"
+                  >
+                    ← Back to paste text (recommended)
+                  </button>
+
+                  <div className="rounded-md border border-warn/30 bg-warn/8 px-3 py-2.5 text-[11px] leading-relaxed text-warn/90">
+                    <strong>You do not need this.</strong> Pasting the stats card text is free,
+                    works offline and is exact. This path exists only for when you have a
+                    screenshot and no text — it reads the image with Anthropic's API, which
+                    requires <strong>your own</strong> API key and costs you money per image.
+                  </div>
+
                   <div className="flex flex-col gap-1.5">
                     <span className="field-label">Anthropic API key</span>
                     <input
@@ -270,9 +278,19 @@ export function ImportFromImage({ onImported }: ImportFromImageProps) {
                       placeholder="sk-ant-..."
                       className="w-full rounded-md border border-cream/20 bg-ink px-2.5 py-2 text-sm text-cream transition-colors hover:border-cream/35 focus:border-gold focus:outline-none"
                     />
-                    <p className="text-[11px] leading-relaxed text-danger/85">
-                      Stored only in your browser (localStorage), never sent to any server of ours —
-                      only straight to the Anthropic API. Prefer "Paste text" when you can.
+                    <p className="text-[11px] leading-relaxed text-cream/55">
+                      Your key is stored only in your own browser (localStorage) and is sent
+                      straight to <code className="text-cream/75">api.anthropic.com</code> — this
+                      site has no backend and never receives it. The code doing this is open:{' '}
+                      <a
+                        href="https://github.com/rafaelfranciscoap-sys/ubge-bunker-calc/blob/main/src/engine/imageExtraction.ts"
+                        target="_blank"
+                        rel="noreferrer noopener"
+                        className="text-gold/80 underline underline-offset-2 hover:text-gold"
+                      >
+                        imageExtraction.ts
+                      </a>
+                      .
                     </p>
                     {apiKey && (
                       <button

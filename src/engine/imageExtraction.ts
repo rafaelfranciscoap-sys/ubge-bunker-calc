@@ -1,4 +1,3 @@
-import Anthropic from '@anthropic-ai/sdk'
 import type { ImportedBunkerStats } from '../store/useImportedBunkerStore'
 
 export type SupportedMediaType = 'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp'
@@ -55,6 +54,10 @@ export async function analyzeImage(
   base64: string,
   mediaType: SupportedMediaType,
 ): Promise<string> {
+  // Import dinâmico de propósito: o SDK da Anthropic é a maior dependência do projeto e só
+  // serve para este caminho opcional. Carregado sob demanda, ele sai do bundle inicial —
+  // quem só usa o import por texto (a maioria) nunca baixa esse peso.
+  const { default: Anthropic } = await import('@anthropic-ai/sdk')
   const client = new Anthropic({ apiKey, dangerouslyAllowBrowser: true })
   const response = await client.messages.create({
     model: MODEL,
