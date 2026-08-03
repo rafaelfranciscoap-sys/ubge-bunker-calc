@@ -1,14 +1,16 @@
 import { useState } from 'react'
+import { HowItWorks } from './components/HowItWorks'
 import { ImportFromImage } from './components/ImportFromImage'
 import { SiegeCalculator } from './components/SiegeCalculator'
 import { UbgeMarkIcon } from './components/icons'
 import { useImportedBunkerStore } from './store/useImportedBunkerStore'
 
-type Tab = 'siege' | 'import'
+type Tab = 'siege' | 'import' | 'how'
 
 const TABS: { key: Tab; label: string }[] = [
   { key: 'siege', label: 'Siege Calculator' },
   { key: 'import', label: 'Import' },
+  { key: 'how', label: 'How it works' },
 ]
 
 function App() {
@@ -69,6 +71,7 @@ function App() {
       <main className="relative z-10 flex-1">
         {tab === 'siege' && <SiegeCalculator />}
         {tab === 'import' && <ImportFromImage onImported={() => setTab('siege')} />}
+        {tab === 'how' && <HowItWorks />}
       </main>
 
       <footer className="relative z-10 mt-6 border-t border-cream/10">
