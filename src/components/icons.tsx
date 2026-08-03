@@ -177,14 +177,3 @@ export function WeaponIcon({ iconType, ...props }: { iconType: WeaponIconType } 
     default:        return <ShellIcon {...props} />
   }
 }
-
-// Galão de suprimentos de manutenção.
-export function MaintenanceCanIcon(props: SVGProps<SVGSVGElement>) {
-  return (
-    <IconBase {...props}>
-      <rect x="3" y="4.5" width="9" height="9.5" rx="1" />
-      <path d="M5 4.5 V3 H10 V4.5" />
-      <path d="M12 6.5 H14 V10 H12" />
-    </IconBase>
-  )
-}

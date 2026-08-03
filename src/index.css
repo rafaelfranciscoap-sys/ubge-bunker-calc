@@ -1,13 +1,132 @@
 @import "tailwindcss";
 
+/* Fontes empacotadas localmente (sem CDN externo — funciona offline e sem rastreio).
+   Oswald: condensada, cara de cartaz militar — títulos, rótulos e números de destaque.
+   Inter: alta legibilidade em corpo de texto e tabelas densas. */
+@import "@fontsource-variable/oswald";
+@import "@fontsource-variable/inter";
+
 @theme {
-  --color-bg-dark: #1C1810;
-  --color-gold: #C9A227;
-  --color-olive: #7C8B5A;
-  --color-rust: #A64B2A;
+  /* ── Paleta base do regimento (fixada no CLAUDE.md — não alterar) ──────────── */
+  --color-bg-dark: #1c1810;
+  --color-gold: #c9a227;
+  --color-olive: #7c8b5a;
+  --color-rust: #a64b2a;
   --color-cream: #ddd8c0;
+
+  /* ── Níveis de superfície derivados (profundidade sem sair da paleta) ──────── */
+  --color-ink: #120f0a; /* recuos/insets — mais fundo que a página */
+  --color-surface: #221d15; /* painéis */
+  --color-surface-raised: #2b2419; /* cabeçalhos de painel, itens elevados */
+
+  /* ── Tokens semânticos (harmonizados com a paleta, não cores avulsas) ─────── */
+  --color-good: #9bbf6b; /* integridade alta / vida total — olive puxado p/ claro */
+  --color-warn: #d8b03c; /* atenção — gold puxado p/ claro */
+  --color-danger: #c25a35; /* rust puxado p/ claro, legível em fundo escuro */
+  --color-critical: #d0453a; /* crítico */
+
+  /* ── Tipografia ───────────────────────────────────────────────────────────── */
+  --font-display: "Oswald Variable", "Oswald", system-ui, sans-serif;
+  --font-sans: "Inter Variable", "Inter", system-ui, -apple-system, sans-serif;
+}
+
+/* ── Base ──────────────────────────────────────────────────────────────────── */
+
+html {
+  color-scheme: dark;
 }
 
 body {
   margin: 0;
+  font-family: var(--font-sans);
+  /* Trava a renderização de números em largura fixa: colunas de tabela e os
+     contadores grandes não "pulam" quando o valor muda. */
+  font-variant-numeric: tabular-nums;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Títulos e rótulos usam a condensada. */
+h1,
+h2,
+h3,
+.font-display {
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+/* ── Acessibilidade ────────────────────────────────────────────────────────── */
+
+/* Anel de foco visível e consistente para navegação por teclado — o padrão do
+   browser some contra o fundo escuro. */
+:focus-visible {
+  outline: 2px solid var(--color-gold);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--color-gold) 35%, transparent);
+  color: var(--color-cream);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ── Barras de rolagem no tema escuro ──────────────────────────────────────── */
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--color-cream) 20%, transparent) transparent;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--color-cream) 18%, transparent);
+  border-radius: 6px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in srgb, var(--color-cream) 32%, transparent);
+  background-clip: content-box;
+}
+
+/* ── Utilitários de composição ─────────────────────────────────────────────── */
+
+/* Grão sutil de filme: tira o "plástico" do fundo chapado e dá a textura
+   gasta que combina com a estética de guerra do Foxhole. Puramente decorativo. */
+@utility grain {
+  position: relative;
+}
+@utility grain-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.035;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* Rótulo de campo: caixa alta, condensada, espaçada — a "etiqueta de formulário
+   militar" que se repete em todos os painéis. */
+@utility field-label {
+  font-family: var(--font-display);
+  font-size: 0.6875rem; /* 11px — acima do 10px anterior, que ficava ilegível */
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--color-cream) 62%, transparent);
 }

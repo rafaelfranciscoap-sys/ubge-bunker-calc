@@ -14,7 +14,7 @@ export function isSupportedMediaType(mediaType: string): mediaType is SupportedM
 
 export function splitDataUrl(dataUrl: string): { base64: string; mediaType: string } {
   const match = /^data:([^;]+);base64,(.*)$/s.exec(dataUrl)
-  if (!match) throw new Error('Formato de imagem inesperado.')
+  if (!match) throw new Error('Unexpected image format.')
   return { mediaType: match[1], base64: match[2] }
 }
 
@@ -29,21 +29,21 @@ export const EXTRACTION_FIELDS = [
 ] as const
 
 // fonte: pedido explícito da Fase 5 — JSON estrito, só estes campos, nada mais.
-export const EXTRACTION_PROMPT = `Você está vendo uma captura de tela de um card de estatísticas de bunker do jogo Foxhole (pode ser do foxbunker.com, do foxholeplanner, ou da tela de upgrade dentro do próprio jogo).
+export const EXTRACTION_PROMPT = `You are looking at a screenshot of a bunker stats card from the game Foxhole (it may come from foxbunker.com, foxholeplanner, or the in-game upgrade screen).
 
-Extraia exatamente estes campos, se estiverem visíveis na imagem:
-- hpTotal: HP total / Max Health (número)
-- breachPercent: % de Breachable Health (número, ex.: 35 para 35%)
-- breachHpAbsolute: valor absoluto de Breachable Health (número)
-- integrityPercent: % de Structural Integrity (número)
-- size: tamanho / número de peças do bunker (número inteiro)
-- repairCost: custo de reparo mostrado no card (número; se houver múltiplos recursos, use o valor total ou o primeiro valor mostrado)
-- repairBmat: building materials (bmat) de reparo (número)
+Extract exactly these fields, if they are visible in the image:
+- hpTotal: total HP / Max Health (number)
+- breachPercent: Breachable Health percentage (number, e.g. 35 for 35%)
+- breachHpAbsolute: absolute Breachable Health value (number)
+- integrityPercent: Structural Integrity percentage (number)
+- size: bunker size / number of pieces (integer)
+- repairCost: repair cost shown on the card (number; if several resources are listed, use the total or the first value shown)
+- repairBmat: repair building materials, bmat (number)
 
-Responda SOMENTE com um JSON estrito, sem nenhum texto antes ou depois, exatamente neste formato:
+Respond ONLY with strict JSON, no text before or after, in exactly this format:
 {"hpTotal": number|null, "breachPercent": number|null, "breachHpAbsolute": number|null, "integrityPercent": number|null, "size": number|null, "repairCost": number|null, "repairBmat": number|null}
 
-Se um campo não estiver visível ou não puder ser lido com confiança, use null para esse campo. Não invente valores. Não inclua explicações, markdown ou texto adicional — apenas o objeto JSON.`
+If a field is not visible or cannot be read with confidence, use null for that field. Do not invent values. Do not include explanations, markdown or extra text — only the JSON object.`
 
 const MODEL = 'claude-sonnet-5'
 
