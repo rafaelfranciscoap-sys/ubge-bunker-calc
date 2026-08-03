@@ -6,6 +6,7 @@ import {
   type BunkerColumnKey,
   type Weapon,
 } from '../data/weapons'
+import { damageTypeText } from '../data/damageTypeStyle'
 import { integrityClass, shelterBonusPPForWeapon, weaponDestructionRow } from '../engine/bunkerDestruction'
 import { useImportedBunkerStore } from '../store/useImportedBunkerStore'
 import {
@@ -242,9 +243,11 @@ export function ImportedBunkerPanel({ shelterCount = 0 }: { shelterCount?: numbe
                     >
                       <td className="py-1.5 pr-2">
                         <span className="flex items-center gap-1.5">
+                          {/* Ícone carrega o TIPO DE DANO; o realce de shelter fica no nome,
+                              no badge de pp e nos números — as duas informações convivem. */}
                           <WeaponIcon
                             iconType={weapon.iconType}
-                            className={`shrink-0 ${shelterAffected ? 'text-good/70' : 'text-cream/45'}`}
+                            className={`shrink-0 ${damageTypeText(weapon.damageTypeName)}`}
                           />
                           <span className={shelterAffected ? 'text-good/90' : 'text-cream/85'}>
                             {weapon.label}

@@ -178,6 +178,78 @@ export function WeaponIcon({ iconType, ...props }: { iconType: WeaponIconType } 
   }
 }
 
+// ── Glifos de tier de estrutura ───────────────────────────────────────────────
+// T1/T2/T3 são só texto nos botões; o material que cada tier representa é a informação
+// que importa (o que passa de dano muda com ele). Estes glifos dão essa leitura de relance.
+
+// T1 — sacos de areia empilhados.
+export function TierSandbagIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <IconBase {...props}>
+      <rect x="1.8" y="9" width="5.2" height="4" rx="2" />
+      <rect x="9" y="9" width="5.2" height="4" rx="2" />
+      <rect x="5.4" y="4.6" width="5.2" height="4" rx="2" />
+    </IconBase>
+  )
+}
+
+// T2 — alvenaria: duas fiadas desencontradas.
+export function TierBrickIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <IconBase {...props}>
+      <rect x="1.8" y="4.4" width="5.4" height="3.4" />
+      <rect x="8.8" y="4.4" width="5.4" height="3.4" />
+      <rect x="1.8" y="9.2" width="3" height="3.4" />
+      <rect x="4.4" y="9.2" width="5.4" height="3.4" />
+      <rect x="11.4" y="9.2" width="2.8" height="3.4" />
+    </IconBase>
+  )
+}
+
+// T3 — bloco de concreto com vergalhão.
+export function TierConcreteIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <IconBase {...props}>
+      <rect x="2" y="3.6" width="12" height="9.2" rx="0.8" />
+      <path d="M2 7.2h12M2 10.4h12M6.4 3.6v9.2M10.4 3.6v9.2" strokeWidth={0.9} opacity={0.65} />
+    </IconBase>
+  )
+}
+
+// T3 molhado — o mesmo bloco com a gota de concreto fresco (toma 10× dano).
+export function TierConcreteWetIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <IconBase {...props}>
+      <rect x="2" y="3.6" width="9.4" height="9.2" rx="0.8" />
+      <path d="M2 7.2h9.4M2 10.4h9.4M6.2 3.6v9.2" strokeWidth={0.9} opacity={0.65} />
+      <path d="M13.4 7.6c1.1 1.5 1.6 2.4 1.6 3.1a1.6 1.6 0 0 1-3.2 0c0-.7.5-1.6 1.6-3.1z" />
+    </IconBase>
+  )
+}
+
+// Salas de Artillery Shelter: três quadrados que acendem conforme o bunker tem mais salas.
+// Comunica "quantas salas" melhor que o número solto no botão.
+export function ShelterRoomsGlyph({
+  filled,
+  className = '',
+}: {
+  filled: number
+  className?: string
+}) {
+  return (
+    <span className={`flex items-center gap-[3px] ${className}`} aria-hidden="true">
+      {[0, 1, 2].map((i) => (
+        <span
+          key={i}
+          className={`h-[7px] w-[7px] rounded-[1.5px] border ${
+            i < filled ? 'border-current bg-current' : 'border-current/45'
+          }`}
+        />
+      ))}
+    </span>
+  )
+}
+
 // Brasão de engenharia da UBGE — marca autoral (não é o logo oficial do regimento;
 // é um símbolo desenhado aqui no mesmo espírito: pá + engrenagem = "OBRA").
 // A moldura hexagonal ecoa a malha de hexes do mapa do Foxhole e o padrão de fundo.

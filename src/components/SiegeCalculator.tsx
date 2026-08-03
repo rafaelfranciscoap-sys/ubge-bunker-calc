@@ -15,9 +15,17 @@ import {
 } from '../engine/bunkerDestruction'
 import { useImportedBunkerStore } from '../store/useImportedBunkerStore'
 import { ImportedBunkerPanel } from './ImportedBunkerPanel'
+import { damageTypeBadge, damageTypeText } from '../data/damageTypeStyle'
 import { SavedBunkers } from './SavedBunkers'
 import { WeaponComparison } from './WeaponComparison'
-import { WeaponIcon } from './icons'
+import {
+  ShelterRoomsGlyph,
+  TierBrickIcon,
+  TierConcreteIcon,
+  TierConcreteWetIcon,
+  TierSandbagIcon,
+  WeaponIcon,
+} from './icons'
 
 // Rótulos das colunas — T1/T2/T3 e wet/dry são termos do jogo, mantidos em inglês.
 const COLUMN_LABEL: Record<BunkerColumnKey, string> = {
@@ -27,14 +35,13 @@ const COLUMN_LABEL: Record<BunkerColumnKey, string> = {
   t3_dry: 'T3 dry',
 }
 
-// Cor por tipo de dano — dá para reconhecer a natureza da arma antes de ler o texto,
-// e é a mesma leitura em todo o app (badge, ícone, tabela).
-const DAMAGE_TYPE_STYLE: Record<string, string> = {
-  'High Explosive': 'border-gold/40 bg-gold/12 text-gold',
-  Explosive: 'border-gold/30 bg-gold/8 text-gold/85',
-  Incendiary: 'border-danger/40 bg-danger/12 text-danger',
-  Demolition: 'border-good/45 bg-good/12 text-good',
-  'Armour Piercing': 'border-cream/25 bg-cream/8 text-cream/65',
+// Material de cada tier — o que muda entre eles é o quanto de dano passa, então mostrar
+// o material ajuda mais que a sigla sozinha.
+const COLUMN_ICON: Record<BunkerColumnKey, typeof TierSandbagIcon> = {
+  t1: TierSandbagIcon,
+  t2: TierBrickIcon,
+  t3_wet: TierConcreteWetIcon,
+  t3_dry: TierConcreteIcon,
 }
 
 function defaultColumnForTier(tier: 'T1' | 'T2' | 'T3' | null): BunkerColumnKey {
@@ -93,14 +100,21 @@ function BreachBadge({ outcome }: { outcome: BreachOutcome }) {
 function PhaseBar({
   hitsToOpenBreach,
   hitsToDestroy,
+  timeOpenBreach,
+  timeDestroy,
 }: {
   hitsToOpenBreach: number
   hitsToDestroy: number
+  timeOpenBreach: number | null
+  timeDestroy: number | null
 }) {
   if (!Number.isFinite(hitsToDestroy) || hitsToDestroy <= 0) return null
   const phase1 = Number.isFinite(hitsToOpenBreach) ? hitsToOpenBreach : 0
   const phase2 = hitsToDestroy - phase1
   const pct1 = Math.round((phase1 / hitsToDestroy) * 100)
+  // Tempo só da fase 2 = total − tempo até a brecha abrir.
+  const timePhase2 =
+    timeDestroy !== null && timeOpenBreach !== null ? timeDestroy - timeOpenBreach : null
 
   return (
     <div className="flex flex-col gap-1.5">
@@ -117,12 +131,18 @@ function PhaseBar({
           title={`Phase 2 — ${formatNumber(phase2)} hits inside the breach`}
         />
       </div>
-      <div className="flex justify-between text-[11px] text-cream/45">
+      <div className="flex justify-between gap-3 text-[11px] text-cream/45">
         <span>
           <span className="text-danger/80">Phase 1</span> to threshold · {formatNumber(phase1)}
+          {timeOpenBreach !== null && (
+            <span className="text-cream/35"> · {formatSeconds(timeOpenBreach)}</span>
+          )}
         </span>
-        <span>
+        <span className="text-right">
           <span className="text-gold/80">Phase 2</span> in breach · {formatNumber(phase2)}
+          {timePhase2 !== null && (
+            <span className="text-cream/35"> · {formatSeconds(timePhase2)}</span>
+          )}
         </span>
       </div>
     </div>
@@ -194,7 +214,7 @@ export function SiegeCalculator() {
 
   if (!data) {
     return (
-      <div className="flex min-h-[70vh] flex-col items-center justify-center gap-3 px-6 text-center">
+      <div className="mx-auto flex w-full max-w-2xl flex-col items-center gap-4 px-6 py-16 text-center">
         <h1 className="font-display text-2xl font-semibold tracking-wide text-gold">
           Siege Calculator
         </h1>
@@ -202,6 +222,10 @@ export function SiegeCalculator() {
           No bunker loaded. Open the <strong className="text-cream">Import</strong> tab, copy your
           build from foxbunker.com and bring the numbers over to plan the siege here.
         </p>
+        {/* Alvos salvos também aqui: numa sessão nova é o único caminho até eles. */}
+        <div className="w-full text-left">
+          <SavedBunkers />
+        </div>
       </div>
     )
   }
@@ -272,8 +296,13 @@ export function SiegeCalculator() {
 
             {/* Ficha da arma: dá cara à seleção, que antes era só uma linha de texto no select. */}
             <div className="flex items-center gap-3 rounded-md border border-cream/10 bg-ink/60 px-3 py-2.5">
-              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md border border-gold/25 bg-gold/8">
-                <WeaponIcon iconType={weapon.iconType} width={26} height={26} className="text-gold" />
+              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md border border-cream/15 bg-cream/5">
+                <WeaponIcon
+                  iconType={weapon.iconType}
+                  width={26}
+                  height={26}
+                  className={damageTypeText(weapon.damageTypeName)}
+                />
               </span>
               <span className="flex min-w-0 flex-1 flex-col gap-0.5">
                 <span className="font-display text-base font-semibold leading-none text-cream">
@@ -286,9 +315,9 @@ export function SiegeCalculator() {
                 </span>
               </span>
               <span
-                className={`shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-medium ${
-                  DAMAGE_TYPE_STYLE[weapon.damageTypeName] ?? 'border-cream/25 text-cream/60'
-                }`}
+                className={`shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-medium ${damageTypeBadge(
+                  weapon.damageTypeName,
+                )}`}
               >
                 {weapon.damageTypeName}
               </span>
@@ -303,26 +332,30 @@ export function SiegeCalculator() {
             <div className="flex flex-col gap-1.5">
               <span className="field-label">Bunker State</span>
               <div className="grid grid-cols-4 gap-1.5">
-                {BUNKER_COLUMNS.map((col) => (
-                  <button
-                    key={col.key}
-                    type="button"
-                    onClick={() => setColumn(col.key)}
-                    aria-pressed={column === col.key}
-                    className={`relative rounded-md border px-2 py-2 font-display text-xs font-medium tracking-wide transition-colors ${
-                      column === col.key
-                        ? 'border-gold bg-gold text-bg-dark'
-                        : detectedColumn === col.key
-                          ? 'border-gold/40 text-cream/90 hover:border-gold/60'
-                          : 'border-cream/20 text-cream/70 hover:border-gold/50 hover:text-cream'
-                    }`}
-                  >
-                    {COLUMN_LABEL[col.key]}
-                    {detectedColumn === col.key && column !== col.key && (
-                      <span className="absolute -right-0.5 -top-0.5 h-1.5 w-1.5 rounded-full bg-good" />
-                    )}
-                  </button>
-                ))}
+                {BUNKER_COLUMNS.map((col) => {
+                  const TierIcon = COLUMN_ICON[col.key]
+                  return (
+                    <button
+                      key={col.key}
+                      type="button"
+                      onClick={() => setColumn(col.key)}
+                      aria-pressed={column === col.key}
+                      className={`relative flex flex-col items-center gap-1 rounded-md border px-2 py-2 font-display text-xs font-medium tracking-wide transition-colors ${
+                        column === col.key
+                          ? 'border-gold bg-gold text-bg-dark'
+                          : detectedColumn === col.key
+                            ? 'border-gold/40 text-cream/90 hover:border-gold/60'
+                            : 'border-cream/20 text-cream/70 hover:border-gold/50 hover:text-cream'
+                      }`}
+                    >
+                      <TierIcon width={17} height={17} />
+                      {COLUMN_LABEL[col.key]}
+                      {detectedColumn === col.key && column !== col.key && (
+                        <span className="absolute -right-0.5 -top-0.5 h-1.5 w-1.5 rounded-full bg-good" />
+                      )}
+                    </button>
+                  )
+                })}
               </div>
               {detectedColumn && (
                 <p className="text-[11px] text-cream/40">
@@ -341,12 +374,13 @@ export function SiegeCalculator() {
                     type="button"
                     onClick={() => setShelterCount(n)}
                     aria-pressed={shelterCount === n}
-                    className={`rounded-md border py-2 font-display text-xs font-medium tracking-wide transition-colors ${
+                    className={`flex flex-col items-center gap-1.5 rounded-md border py-2 font-display text-xs font-medium tracking-wide transition-colors ${
                       shelterCount === n
                         ? 'border-good/60 bg-good/18 text-good'
                         : 'border-cream/20 text-cream/60 hover:border-cream/40 hover:text-cream/85'
                     }`}
                   >
+                    <ShelterRoomsGlyph filled={n} />
                     {n === 0 ? 'None' : `${n}×`}
                   </button>
                 ))}
@@ -409,34 +443,49 @@ export function SiegeCalculator() {
                   <>
                     {/* Os dois números que decidem o cerco */}
                     <div className="grid grid-cols-2 gap-3">
-                      <div className="flex flex-col items-center rounded-lg border border-danger/30 bg-danger/8 px-3 py-4 text-center">
+                      <div className="relative flex flex-col items-center overflow-hidden rounded-lg border border-danger/30 bg-danger/8 px-3 py-4 text-center">
+                        {/* Silhueta da arma como marca d'água: dá peso ao bloco sem ocupar espaço. */}
+                        <WeaponIcon
+                          iconType={weapon.iconType}
+                          width={96}
+                          height={96}
+                          aria-hidden="true"
+                          className="pointer-events-none absolute -bottom-5 -right-4 text-danger opacity-[0.07]"
+                        />
                         {result.outcome.ignoresThreshold ? (
-                          <span className="font-display text-2xl font-bold leading-none text-danger">
+                          <span className="relative font-display text-2xl font-bold leading-none text-danger">
                             INSTANT
                           </span>
                         ) : (
-                          <span className="font-display text-[2.75rem] font-bold leading-none text-danger">
+                          <span className="relative font-display text-[2.75rem] font-bold leading-none text-danger">
                             {formatNumber(result.outcome.hitsToOpenBreach)}
                           </span>
                         )}
-                        <span className="field-label mt-2 !text-[10px] !tracking-[0.1em]">
+                        <span className="field-label relative mt-2 !text-[10px] !tracking-[0.1em]">
                           {result.outcome.ignoresThreshold ? 'Breach' : 'Hits to breach'}
                         </span>
                         {!weapon.placed && result.timeOpenBreach !== null && (
-                          <span className="mt-1 text-xs text-cream/45">
+                          <span className="relative mt-1 text-xs text-cream/45">
                             {formatSeconds(result.timeOpenBreach)}
                           </span>
                         )}
                       </div>
-                      <div className="flex flex-col items-center rounded-lg border border-gold/30 bg-gold/8 px-3 py-4 text-center">
-                        <span className="font-display text-[2.75rem] font-bold leading-none text-gold">
+                      <div className="relative flex flex-col items-center overflow-hidden rounded-lg border border-gold/30 bg-gold/8 px-3 py-4 text-center">
+                        <WeaponIcon
+                          iconType={weapon.iconType}
+                          width={96}
+                          height={96}
+                          aria-hidden="true"
+                          className="pointer-events-none absolute -bottom-5 -right-4 text-gold opacity-[0.07]"
+                        />
+                        <span className="relative font-display text-[2.75rem] font-bold leading-none text-gold">
                           {formatNumber(result.outcome.hitsToDestroy)}
                         </span>
-                        <span className="field-label mt-2 !text-[10px] !tracking-[0.1em]">
+                        <span className="field-label relative mt-2 !text-[10px] !tracking-[0.1em]">
                           Hits to destroy
                         </span>
                         {!weapon.placed && result.timeDestroy !== null && (
-                          <span className="mt-1 text-xs text-cream/45">
+                          <span className="relative mt-1 text-xs text-cream/45">
                             {formatSeconds(result.timeDestroy)}
                           </span>
                         )}
@@ -447,6 +496,8 @@ export function SiegeCalculator() {
                       <PhaseBar
                         hitsToOpenBreach={result.outcome.hitsToOpenBreach}
                         hitsToDestroy={result.outcome.hitsToDestroy}
+                        timeOpenBreach={result.timeOpenBreach}
+                        timeDestroy={result.timeDestroy}
                       />
                     )}
 

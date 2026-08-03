@@ -9,7 +9,11 @@ function formatNumber(value: number | null): string {
 
 // Barra de alvos conhecidos: salva o bunker carregado com um nome e traz qualquer um de volta
 // com um clique. Guardado em localStorage, então sobrevive entre sessões e wars.
-export function SavedBunkers({ current }: { current: ImportedBunkerStats }) {
+//
+// `current` é opcional de propósito: numa sessão nova não há bunker carregado, mas os alvos
+// salvos precisam continuar alcançáveis — sem isso eles ficariam presos atrás do estado vazio.
+// Sem `current`, some só o botão de salvar; a lista continua clicável.
+export function SavedBunkers({ current }: { current?: ImportedBunkerStats | null }) {
   const bunkers = useSavedBunkersStore((s) => s.bunkers)
   const save = useSavedBunkersStore((s) => s.save)
   const remove = useSavedBunkersStore((s) => s.remove)
@@ -19,6 +23,7 @@ export function SavedBunkers({ current }: { current: ImportedBunkerStats }) {
   const [name, setName] = useState('')
 
   function commitSave() {
+    if (!current) return
     save(name, current)
     setName('')
     setNaming(false)
@@ -28,7 +33,7 @@ export function SavedBunkers({ current }: { current: ImportedBunkerStats }) {
     <div className="flex flex-col gap-2 rounded-lg border border-cream/12 bg-ink/40 px-3 py-2.5">
       <div className="flex items-center gap-2">
         <span className="field-label flex-1">Saved targets</span>
-        {naming ? (
+        {!current ? null : naming ? (
           <form
             className="flex items-center gap-1.5"
             onSubmit={(e) => {
@@ -79,7 +84,9 @@ export function SavedBunkers({ current }: { current: ImportedBunkerStats }) {
 
       {bunkers.length === 0 ? (
         <p className="text-[11px] text-cream/40">
-          Nothing saved yet. Store a bunker here to bring it back later without re-importing.
+          {current
+            ? 'Nothing saved yet. Store a bunker here to bring it back later without re-importing.'
+            : 'No saved targets yet.'}
         </p>
       ) : (
         <div className="flex flex-wrap gap-1.5">

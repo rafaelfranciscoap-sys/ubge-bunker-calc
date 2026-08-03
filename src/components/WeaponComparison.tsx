@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { damageTypeText } from '../data/damageTypeStyle'
 import { WEAPONS, type BunkerColumnKey } from '../data/weapons'
 import {
   breachOutcome,
@@ -118,7 +119,7 @@ export function WeaponComparison({
                         <span className="flex items-center gap-1.5">
                           <WeaponIcon
                             iconType={weapon.iconType}
-                            className={`shrink-0 ${selected ? 'text-gold' : 'text-cream/45'}`}
+                            className={`shrink-0 ${damageTypeText(weapon.damageTypeName)}`}
                           />
                           <span className={selected ? 'font-semibold text-gold' : 'text-cream/85'}>
                             {weapon.label}
