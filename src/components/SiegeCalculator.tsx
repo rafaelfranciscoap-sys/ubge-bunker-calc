@@ -17,6 +17,7 @@ import {
 import { useImportedBunkerStore } from '../store/useImportedBunkerStore'
 import { ImportedBunkerPanel } from './ImportedBunkerPanel'
 import { damageTypeBadge, damageTypeText } from '../data/damageTypeStyle'
+import { DEVASTATION_STAGES, devastationStage } from '../data/devastation'
 import { SavedBunkers } from './SavedBunkers'
 import { WeaponComparison } from './WeaponComparison'
 import {
@@ -169,6 +170,8 @@ export function SiegeCalculator({ onOpenHowItWorks }: SiegeCalculatorProps = {})
   const [guns, setGuns] = useState(1)
   const [reloadSeconds, setReloadSeconds] = useState(6)
   const [shelterCount, setShelterCount] = useState(0)
+  // Padrão intacto: nenhum modificador aplicado, igual ao shelter começando em "None".
+  const [devastationKey, setDevastationKey] = useState('pristine')
 
   useEffect(() => {
     if (!data) return
@@ -191,6 +194,9 @@ export function SiegeCalculator({ onOpenHowItWorks }: SiegeCalculatorProps = {})
     ? inferTierFromImport(data.hpTotal, data.size, data.integrityPercent)
     : null
 
+  const devastation = devastationStage(devastationKey)
+  const devastationMultiplier = devastation.damageMultiplier
+
   const shelterBonusPP = shelterBonusPPForWeapon(weapon, shelterCount)
   const shelterActive =
     shelterCount > 0 && SHELTER_AFFECTED_TYPES.has(weapon.damageTypeName) && !weapon.bypassesShelter
@@ -209,8 +215,15 @@ export function SiegeCalculator({ onOpenHowItWorks }: SiegeCalculatorProps = {})
 
   const result = useMemo(() => {
     if (!data || data.hpTotal === null) return null
-    const perHit = effectiveDamagePerHit(weapon, column, shelterBonusPP)
-    const outcome = breachOutcome(data.hpTotal, phase1Hp, weapon, column, shelterBonusPP)
+    const perHit = effectiveDamagePerHit(weapon, column, shelterBonusPP, devastationMultiplier)
+    const outcome = breachOutcome(
+      data.hpTotal,
+      phase1Hp,
+      weapon,
+      column,
+      shelterBonusPP,
+      devastationMultiplier,
+    )
     const shotsPerSecond = guns > 0 && reloadSeconds > 0 ? guns / reloadSeconds : 0
     const timeOpenBreach =
       Number.isFinite(outcome.hitsToOpenBreach) && outcome.hitsToOpenBreach > 0 && shotsPerSecond > 0
@@ -221,7 +234,7 @@ export function SiegeCalculator({ onOpenHowItWorks }: SiegeCalculatorProps = {})
         ? outcome.hitsToDestroy / shotsPerSecond
         : null
     return { perHit, outcome, timeOpenBreach, timeDestroy }
-  }, [data, weapon, column, guns, reloadSeconds, shelterBonusPP, phase1Hp])
+  }, [data, weapon, column, guns, reloadSeconds, shelterBonusPP, phase1Hp, devastationMultiplier])
 
   if (!data) {
     return (
@@ -464,6 +477,72 @@ export function SiegeCalculator({ onOpenHowItWorks }: SiegeCalculatorProps = {})
               )}
             </div>
 
+            {/* Devastation — o único modificador que joga A FAVOR do atacante. Padrão intacto,
+                para não mexer nos números já publicados: você adiciona quando o terreno merecer. */}
+            <div className="flex flex-col gap-1.5">
+              <span className="field-label">Ground devastation</span>
+              <div className="grid grid-cols-5 gap-1.5">
+                {DEVASTATION_STAGES.map((stage) => (
+                  <button
+                    key={stage.key}
+                    type="button"
+                    onClick={() => setDevastationKey(stage.key)}
+                    aria-pressed={devastationKey === stage.key}
+                    title={
+                      stage.estimated
+                        ? `${stage.label}: intermediate stages are interpolated — only the ×1.5 ceiling is confirmed`
+                        : `${stage.label}: ×${stage.damageMultiplier} damage taken`
+                    }
+                    className={`flex flex-col items-center gap-1 rounded-md border px-1 py-2 font-display text-[11px] font-medium leading-tight tracking-wide transition-colors ${
+                      devastationKey === stage.key
+                        ? 'border-danger/60 bg-danger/18 text-danger'
+                        : 'border-cream/20 text-cream/60 hover:border-cream/40 hover:text-cream/85'
+                    }`}
+                  >
+                    <span className="truncate">{stage.label}</span>
+                    <span className="flex items-center gap-0.5 text-[10px] opacity-80">
+                      ×{stage.damageMultiplier}
+                      {stage.estimated && (
+                        <span className="text-warn/70" aria-hidden="true">
+                          ?
+                        </span>
+                      )}
+                    </span>
+                  </button>
+                ))}
+              </div>
+
+              <p className="text-[11px] leading-relaxed text-cream/45">
+                Bombarded ground makes structures on it weaker — pick by how chewed up the terrain
+                looks. Only 120mm, 150mm, 300mm and Raidbreaker bombs devastate;{' '}
+                <strong className="text-cream/65">150mm and Raidbreaker do it 3× faster</strong>{' '}
+                per shell than the other two.
+              </p>
+
+              {devastationMultiplier > 1 && (
+                <p
+                  className={`rounded-md border px-2.5 py-1.5 text-[11px] leading-relaxed ${
+                    devastation.estimated
+                      ? 'border-warn/25 bg-warn/8 text-warn/90'
+                      : 'border-danger/25 bg-danger/8 text-danger/90'
+                  }`}
+                >
+                  {devastation.estimated ? (
+                    <>
+                      <strong>Estimated.</strong> Only the ×1.5 ceiling at full devastation is
+                      published — the intermediate stages are interpolated. Also multiplies max
+                      breach chance by the same factor.
+                    </>
+                  ) : (
+                    <>
+                      <strong>Full devastation.</strong> +50% damage taken, and max breach chance
+                      is multiplied by 1.5 too. Structures here also catch fire far more easily.
+                    </>
+                  )}
+                </p>
+              )}
+            </div>
+
             <div className="grid grid-cols-2 gap-3">
               <label className="flex flex-col gap-1.5">
                 <span className="field-label">Guns</span>
@@ -617,6 +696,7 @@ export function SiegeCalculator({ onOpenHowItWorks }: SiegeCalculatorProps = {})
                 phase1Hp={phase1Hp}
                 column={column}
                 shelterCount={shelterCount}
+                devastationMultiplier={devastationMultiplier}
                 guns={guns}
                 selectedWeaponKey={weaponKey}
                 onSelectWeapon={setWeaponKey}
@@ -638,7 +718,10 @@ export function SiegeCalculator({ onOpenHowItWorks }: SiegeCalculatorProps = {})
 
         {/* Painel direito — estatísticas do bunker */}
         <aside className="w-full lg:w-96">
-          <ImportedBunkerPanel shelterCount={shelterCount} />
+          <ImportedBunkerPanel
+            shelterCount={shelterCount}
+            devastationMultiplier={devastationMultiplier}
+          />
         </aside>
       </div>
     </div>

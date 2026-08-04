@@ -22,6 +22,8 @@ The tool itself is faction-neutral — the numbers are the same for everyone.
 - **Real fire rates.** Reload auto-fills from the datamine's mount data per weapon, instead of a
   made-up default. Still editable.
 - **Artillery Shelter modelling**, including which damage types it affects and which bypass it.
+- **Ground devastation** (what players call scorched earth) as an optional modifier — bombarded
+  terrain makes structures take up to 50% more damage, and the tool now lets you account for it.
 - **Saved targets.** Keep known enemy bunkers between sessions.
 - **"How it works" tab** explaining where a bunker's HP number comes from, with the formula
   running live.
@@ -40,6 +42,9 @@ flagged as estimates in the UI:
 - **The wet-concrete damage multiplier and its decay curve.** The 18h curing window is from the
   datamine (`Concrete Settle Duration Mins = 1080`), but the ×10 multiplier and the shape of the
   falloff come from foxholeplanner, which still uses the older 24h window.
+- **Intermediate devastation stages.** Only the ×1.5 ceiling at full devastation is published;
+  the stages in between are interpolated, and the scale converting shells fired into a stage is
+  not documented anywhere.
 
 "Repair rate" is shown blank for the same reason — it is not confirmed in any source we have.
 

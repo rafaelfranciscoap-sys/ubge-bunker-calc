@@ -35,17 +35,21 @@ export function concreteDryingMultiplier(curingSeconds: number): number {
 // Dano efetivo por acerto de uma arma numa coluna de tier/estado.
 // shelterBonusPP: pontos percentuais a subtrair do pass-through (modelo aditivo).
 //   Use shelterBonusPPForWeapon() para obter o valor correto por arma.
+// devastationMultiplier: quanto o terreno devastado amplifica o dano recebido (1 = intacto,
+//   até 1.5 no máximo). Ver data/devastation.ts. Default 1 = melhor cenário para o defensor,
+//   que é o que a ferramenta assumia implicitamente antes de a mecânica existir aqui.
 export function effectiveDamagePerHit(
   weapon: Weapon,
   column: BunkerColumnKey,
   shelterBonusPP = 0,
+  devastationMultiplier = 1,
 ): number {
   const col = BUNKER_COLUMNS.find((c) => c.key === column)!
   const profile = weapon.profiles[col.profileTier]
   const multiplier = weapon.multipliers?.[col.profileTier] ?? 1
   const drying = col.wet ? WET_CONCRETE_DRYING_MULTIPLIER : 1
   const adjustedProfile = Math.max(0, profile - shelterBonusPP)
-  return weapon.damage * adjustedProfile * drying * multiplier
+  return weapon.damage * adjustedProfile * drying * multiplier * devastationMultiplier
 }
 
 // Acertos para remover uma dada quantidade de vida (destruir ou brechar).
@@ -55,8 +59,9 @@ export function hitsForHealth(
   weapon: Weapon,
   column: BunkerColumnKey,
   shelterBonusPP = 0,
+  devastationMultiplier = 1,
 ): number {
-  const effectiveDamage = effectiveDamagePerHit(weapon, column, shelterBonusPP)
+  const effectiveDamage = effectiveDamagePerHit(weapon, column, shelterBonusPP, devastationMultiplier)
   if (effectiveDamage <= 0 || health <= 0) return Infinity
   return Math.ceil(health / effectiveDamage)
 }
@@ -67,8 +72,9 @@ export function hitsToDestroy(
   maxHealth: number,
   weapon: Weapon,
   column: BunkerColumnKey,
+  devastationMultiplier = 1,
 ): number {
-  return hitsForHealth(maxHealth, weapon, column)
+  return hitsForHealth(maxHealth, weapon, column, 0, devastationMultiplier)
 }
 
 // ---------------------------------------------------------------------------
@@ -101,10 +107,11 @@ export function breachOutcome(
   weapon: Weapon,
   column: BunkerColumnKey,
   shelterBonusPP = 0,
+  devastationMultiplier = 1,
 ): BreachOutcome {
   const breach = weaponBreach(weapon)
   const modifier = weapon.breachingModifier ?? 1
-  const perHit = effectiveDamagePerHit(weapon, column, shelterBonusPP)
+  const perHit = effectiveDamagePerHit(weapon, column, shelterBonusPP, devastationMultiplier)
 
   if (!breach.breachesBunkers || perHit <= 0 || maxHealth <= 0) {
     return {
@@ -171,10 +178,11 @@ export function weaponDestructionRow(
   maxHealth: number,
   weapon: Weapon,
   shelterBonusPP = 0,
+  devastationMultiplier = 1,
 ): Record<BunkerColumnKey, number> {
   const row = {} as Record<BunkerColumnKey, number>
   for (const col of BUNKER_COLUMNS) {
-    row[col.key] = hitsForHealth(maxHealth, weapon, col.key, shelterBonusPP)
+    row[col.key] = hitsForHealth(maxHealth, weapon, col.key, shelterBonusPP, devastationMultiplier)
   }
   return row
 }

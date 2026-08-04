@@ -95,7 +95,14 @@ function isShelterAffected(weapon: Weapon, shelterCount: number): boolean {
 // Painel de estatísticas do bunker IMPORTADO do foxbunker, no espírito do "Selection Stats"
 // do foxholeplanner. Alimentado só pelos dados que vieram do import — nada estimado; campos
 // ausentes ficam "—".
-export function ImportedBunkerPanel({ shelterCount = 0 }: { shelterCount?: number }) {
+export function ImportedBunkerPanel({
+  shelterCount = 0,
+  devastationMultiplier = 1,
+}: {
+  shelterCount?: number
+  /** Multiplicador de dano do terreno devastado (1 = intacto). Ver data/devastation.ts. */
+  devastationMultiplier?: number
+}) {
   const data = useImportedBunkerStore((state) => state.data)
   const clear = useImportedBunkerStore((state) => state.clear)
 
@@ -107,11 +114,12 @@ export function ImportedBunkerPanel({ shelterCount = 0 }: { shelterCount?: numbe
         data.hpTotal as number,
         weapon,
         shelterBonusPPForWeapon(weapon, shelterCount),
+        devastationMultiplier,
       ),
       shelterAffected: isShelterAffected(weapon, shelterCount),
       shelterBypassed: shelterCount > 0 && weapon.bypassesShelter,
     }))
-  }, [data, shelterCount])
+  }, [data, shelterCount, devastationMultiplier])
 
   if (!data) return null
 

@@ -29,6 +29,8 @@ export interface WeaponComparisonProps {
   phase1Hp: number
   column: BunkerColumnKey
   shelterCount: number
+  /** Multiplicador de dano do terreno devastado (1 = intacto). Ver data/devastation.ts. */
+  devastationMultiplier?: number
   guns: number
   selectedWeaponKey: string
   onSelectWeapon: (key: string) => void
@@ -42,6 +44,7 @@ export function WeaponComparison({
   phase1Hp,
   column,
   shelterCount,
+  devastationMultiplier = 1,
   guns,
   selectedWeaponKey,
   onSelectWeapon,
@@ -51,8 +54,15 @@ export function WeaponComparison({
   const rows = useMemo(() => {
     return WEAPONS.map((weapon) => {
       const shelterBonusPP = shelterBonusPPForWeapon(weapon, shelterCount)
-      const perHit = effectiveDamagePerHit(weapon, column, shelterBonusPP)
-      const outcome = breachOutcome(maxHealth, phase1Hp, weapon, column, shelterBonusPP)
+      const perHit = effectiveDamagePerHit(weapon, column, shelterBonusPP, devastationMultiplier)
+      const outcome = breachOutcome(
+        maxHealth,
+        phase1Hp,
+        weapon,
+        column,
+        shelterBonusPP,
+        devastationMultiplier,
+      )
       // Só estima tempo quando o datamine deu um ciclo de plataforma. Munição colocada
       // (satchel) não tem cadência de tiro — conta cargas, não tempo.
       const cycle = weapon.cycleSeconds
@@ -66,7 +76,7 @@ export function WeaponComparison({
       if (a.outcome.canBreach !== b.outcome.canBreach) return a.outcome.canBreach ? -1 : 1
       return a.outcome.hitsToDestroy - b.outcome.hitsToDestroy
     })
-  }, [maxHealth, phase1Hp, column, shelterCount, guns])
+  }, [maxHealth, phase1Hp, column, shelterCount, guns, devastationMultiplier])
 
   const best = rows.find((r) => r.outcome.canBreach && Number.isFinite(r.outcome.hitsToDestroy))
 

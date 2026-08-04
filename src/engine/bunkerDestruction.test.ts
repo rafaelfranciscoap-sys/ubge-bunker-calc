@@ -3,6 +3,7 @@ import { WEAPONS, weaponBreach } from '../data/weapons'
 import {
   breachOutcome,
   concreteDryingMultiplier,
+  effectiveDamagePerHit,
   hitsToDestroy,
   integrityClass,
   weaponDestructionRow,
@@ -113,6 +114,41 @@ describe('breachOutcome — modelo de brecha real (datamine Update 65)', () => {
             hitsToDestroy(hp, weap, col),
           )
         }
+      }
+    }
+  })
+
+  // Devastation: terreno bombardeado amplifica o dano recebido, até ×1.5 no máximo.
+  // fonte: wiki oficial (No Man's Land / Structure Health), pós Update 1.64.
+  it('devastação máxima corta os acertos em um terço', () => {
+    const semDevastacao = breachOutcome(HP, PHASE1_HP, weapon('150mm'), 't3_dry')
+    const comDevastacao = breachOutcome(HP, PHASE1_HP, weapon('150mm'), 't3_dry', 0, 1.5)
+    expect(semDevastacao.hitsToDestroy).toBe(85)
+    // 18940 / (225 × 1.5) = 56.1 → 57
+    expect(comDevastacao.hitsToDestroy).toBe(57)
+    // ×1.5 de dano ⇒ ~2/3 dos acertos
+    expect(comDevastacao.hitsToDestroy / semDevastacao.hitsToDestroy).toBeCloseTo(2 / 3, 1)
+  })
+
+  it('padrão é terreno intacto — omitir o parâmetro não muda nada', () => {
+    const omitido = breachOutcome(HP, PHASE1_HP, weapon('150mm'), 't3_dry')
+    const explicito = breachOutcome(HP, PHASE1_HP, weapon('150mm'), 't3_dry', 0, 1)
+    expect(omitido.hitsToDestroy).toBe(explicito.hitsToDestroy)
+    expect(omitido.hitsToOpenBreach).toBe(explicito.hitsToOpenBreach)
+  })
+
+  it('devastação empilha com o shelter, cada um no seu lado da conta', () => {
+    // 150mm T3: passa 25%. Com 1 shelter passa 10% → 90/acerto. Devastado ×1.5 → 135/acerto.
+    expect(effectiveDamagePerHit(weapon('150mm'), 't3_dry', 0.15)).toBeCloseTo(90, 6)
+    expect(effectiveDamagePerHit(weapon('150mm'), 't3_dry', 0.15, 1.5)).toBeCloseTo(135, 6)
+  })
+
+  it('a invariante com a tabela continua valendo sob devastação', () => {
+    for (const col of ['t1', 't2', 't3_dry', 't3_wet'] as const) {
+      for (const mult of [1, 1.25, 1.5]) {
+        expect(breachOutcome(HP, PHASE1_HP, weapon('150mm'), col, 0, mult).hitsToDestroy).toBe(
+          hitsToDestroy(HP, weapon('150mm'), col, mult),
+        )
       }
     }
   })
